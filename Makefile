@@ -27,6 +27,12 @@ build: $(KERN)
 qemu: $(KERN)
 	$(QEMU) $(QEMUOPTS)
 
+.gdbinit-gui: .gdbinit.tmpl-riscv-gui
+	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
+
+qemu-gdb-gui: $(KERN) .gdbinit-gui
+	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
+
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
@@ -35,4 +41,4 @@ qemu-gdb: $(KERN) .gdbinit
 
 clean:
 	$(MAKE) --directory=$(KERN) clean
-	rm -f $(KERNEL_ELF) .gdbinit
+	rm -f $(KERNEL_ELF) .gdbinit .gdbinit-gui
