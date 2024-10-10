@@ -1,6 +1,7 @@
 #include "riscv.h"
 #include "lib/print.h"
 #include "dev/uart.h"
+#include "proc/cpu.h"
 
 volatile static int started = 0;
 
@@ -10,8 +11,14 @@ int main()
 {
     // TODO:进行系统的部分初始化
     // 这里先打印一个字符，代表进入了main函数
-    uart_init();
-    uart_putc_sync('$');
+    if (mycpuid() == 0)
+    {
+        uart_init();
+    }
+    else
+    {
+        uart_putc_sync('$');
+    }
     while (1)
         ;
 }
