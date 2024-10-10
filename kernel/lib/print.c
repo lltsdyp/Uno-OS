@@ -23,10 +23,13 @@ void printf(const char *fmt, ...)
 
 void panic(const char *s)
 {
-
+    panicked=1;
+    while(1)
+        ;
 }
 
 void assert(bool condition, const char* warning)
 {
-
+    if(!condition)
+        panic(warning);
 }
