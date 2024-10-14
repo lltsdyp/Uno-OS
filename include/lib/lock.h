@@ -9,6 +9,8 @@ typedef struct spinlock {
     int cpuid;
 } spinlock_t;
 
+#define SPINLOCK_INVALID_CPUID (-1)
+
 void push_off();
 void pop_off();
 

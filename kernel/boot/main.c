@@ -13,12 +13,9 @@ int main()
     // 这里先打印一个字符，代表进入了main函数
     if (mycpuid() == 0)
     {
-        uart_init();
+        print_init();
     }
-    else
-    {
-        uart_putc_sync('$');
-    }
+    printf("hart %d starting\n", cpuid());
     while (1)
         ;
 }

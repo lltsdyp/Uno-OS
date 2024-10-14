@@ -12,7 +12,7 @@ static char digits[] = "0123456789abcdef";
 
 void print_init(void)
 {
-
+    uart_init();
 }
 
 // Print to the console. only understands %d, %x, %p, %s.
@@ -21,14 +21,14 @@ void printf(const char *fmt, ...)
 
 }
 
-void panic(const char *s)
+void panic(const char *s,...)
 {
     panicked=1;
     while(1)
         ;
 }
 
-void assert(bool condition, const char* warning)
+void assert(bool condition, const char* warning,...)
 {
     if(!condition)
         panic(warning);
