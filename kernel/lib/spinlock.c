@@ -26,9 +26,9 @@ void pop_off(void)
     int interrupt_status=intr_get();
 
     assert(interrupt_status==0, "spinlock_pop_off: interruptible");
-    assert(mycpu->noff>=0, "spinlock_pop_off: no interrupts were disabled!");
-    mycpu->noff--;
-    if(mycpu->noff==0)
+    assert(mycpu()->noff>=0, "spinlock_pop_off: no interrupts were disabled!");
+    mycpu()->noff--;
+    if(mycpu()->noff==0)
     {
         intr_on();
     }

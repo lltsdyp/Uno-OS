@@ -5,7 +5,9 @@
 
 void print_init(void);
 void printf(const char* fmt, ...);
-void panic(const char* warning);
-void assert(bool condition, const char* warning);
+// void panic(char *s);
+// void assert(bool condition, const char* warning);
 
+void panic(const char *fmt, ...);
+void assert(bool condition, const char* warning, ...);
 #endif
