@@ -7,7 +7,7 @@ OBJCOPY = ${TOOLPREFIX}objcopy
 OBJDUMP = ${TOOLPREFIX}objdump
 
 # 编译相关配置
-# CFLAGS = -Wall -Werror #在进行一些相当早期的测试工作时，代码框架中可能会有一些未定义的变量，这就需要注释掉这一行
+CFLAGS = -Wall -Werror #在进行一些相当早期的测试工作时，代码框架中可能会有一些未定义的变量，这就需要注释掉这一行
 						 # 但在最终提交版本时该行不允许被注释
 CFLAGS += -O -fno-omit-frame-pointer -ggdb -gdwarf-2
 CFLAGS += -MD
