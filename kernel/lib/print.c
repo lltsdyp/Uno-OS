@@ -179,13 +179,28 @@ void assert(bool condition, const char *warning, ...)
 {  
     if (!condition)  
     {  
-        va_list ap,ap_copy;
+        va_list ap;  
         va_start(ap, warning);  
 
-        va_copy(ap_copy, ap);
-        panic(warning, ap_copy); // 调用时只传递 warning，处理 ap 在 panic 内  
+        // 在 panic 中使用标准格式字符串  
+        printf("Assertion failed: "); // 输出Assertion失败的提示  
+        vprintf(warning, ap); // 确保可以格式化输出警告信息  
+        printf("\n");  
+        
+        // 进入 panic 状态  
+        panic("Assertion failed: %s", warning);   
 
-        va_end(ap_copy);
         va_end(ap);  
     }  
 }
+
+// void assert(bool condition, const char *warning, ...)  
+// {  
+//     if (!condition)  
+//     {  
+//         va_list ap;
+//         va_start(ap, warning);  
+//         panic(warning, ap); // 调用时传递 warning 和 ap 到 panic 内  
+//         va_end(ap);  
+//     }  
+// }

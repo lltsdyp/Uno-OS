@@ -208,3 +208,185 @@ void pop_off(void)
 }
 ```
 每当进行锁的获取时，我们将中断关闭，避免中断引发死锁。同样，当释放锁时我们也会开中断。
+
+### print.c输出的实现
+在本内核中，主要要实现%d，%x，%p和%s四种数据类型的输出：
+%d和%x的输出
+```c
+// 可以输出%d和%x两种类型变量
+static void printint(int xx, int base, int sign)
+{
+    char buf[16]; // 用于存储数值转换后的数
+    int len;      // 记录转化后数组的长度
+    uint32 x;        // 储存xx的绝对值
+
+    // 如果xx是有符号整数且为正数，则会将sign更新成0
+    // 因此，只有当xx是有符号整数且为负数的时候sign的值才会是非零
+    // 可以用于后面对xx正负性的判断
+    if (sign && (xx < 0))
+        x = -xx;
+    else
+        x = xx;
+
+    len = 0;
+    do
+    {
+        // 将数值x转化成base进制，并将数据存储在buf中
+        buf[len++] = digits[x % base];
+    } while ((x/base)!=0);
+
+    if (xx < 0)
+        consputc('-');
+
+    while (len > 0)
+        consputc(buf[--len]);
+}
+```
+%p的输出
+```c
+// 定义一个静态函数，用于打印64位无符号整数的十六进制表示
+static void printptr(uint64 x)
+{
+    consputc('0'); 
+    consputc('x'); 
+    // 循环遍历64位整数的每个字节，将其转换为十六进制字符并发送
+    for (int i = 0; i < (sizeof(uint64) * 2); i++, x <<= 4)
+        consputc(digits[x >> (sizeof(uint64) * 8 - 4)]);
+}
+```
+%s的输出，通过封装函数uart_putc_sync定义了一个consputc函数，在输出单个字符的时候，增加了判断特殊转义字符的功能。
+```c
+void consputc(int c)
+{
+    if (c == BACKSPACE)
+    {
+        // if the user typed backspace, overwrite with a space.
+        uart_putc_sync('\b');
+        uart_putc_sync(' ');
+        uart_putc_sync('\b');
+    }
+    else
+    {
+        uart_putc_sync(c);
+    }
+}
+```
+考虑到后续代码的复用性，在这里将printf函数的主体代码包装成vprintf函数，从而实现可变参数列表的传递与输出
+```c
+// Print formatted output with a va_list argument  
+void vprintf(const char *fmt, va_list ap)  
+{  
+    int c;  
+    char *s;  
+    spinlock_acquire(&print_lk); // 加锁以确保线程安全  
+
+
+    for (int i = 0; (c = fmt[i] & 0xff) != 0; ++i)  
+    {  
+        if (c != '%')  
+        {  
+            consputc(c); // 直接输出字符  
+            continue;  
+        }  
+
+        c = fmt[++i] & 0xff; // 获取下一个字符  
+        if (c == 0)  
+            break; // 如果下一个字符是结尾，退出  
+
+        switch (c)  
+        {  
+        case 'd':  
+            printint(va_arg(ap, int), 10, 1); // 输出十进制整数  
+            break;  
+        case 'x':  
+            printint(va_arg(ap, int), 16, 1); // 输出十六进制整数  
+            break;  
+        case 'p':  
+            printptr(va_arg(ap, uint64)); // 输出指针  
+            break;  
+        case 's':  
+            if ((s = va_arg(ap, char *)) == 0)  
+                s = "(null)"; // 处理空字符串  
+            for (; *s; ++s)  
+                consputc(*s); // 输出字符串中的每个字符  
+            break;  
+        case '%':  
+            consputc('%'); // 输出百分号  
+            break;  
+        default:  
+            // 输出未知的格式符  
+            consputc('%');  
+            consputc(c);  
+            break;  
+        }  
+    }  
+
+    spinlock_release(&print_lk); // 解锁  
+}
+
+
+// Print to the console. only understands %d, %x, %p, %s.
+// 只需要实现四种输出
+void printf(const char *fmt, ...)
+{
+    va_list ap;
+    if (fmt == 0)  
+        panic("null fmt"); // 检查格式字符串是否为空  
+    va_start(ap, fmt);
+
+    vprintf(fmt,ap);
+
+    va_end(ap);
+}
+```
+为了满足自身调试需要，我们将panic函数和assert函数进行了修改，使其可以接受可变参数。在这里panic就是通过调用vprintf函数直接将可变参数列表传递输出，但由于panic函数自身不支持可变参数列表（猜测，但panic可以接收可变参数），所以再次对assert函数进行修改，依旧通过vprintf函数进行可变参数列表的传递和输出。
+```c
+void panic(const char *fmt, ...)
+{
+    va_list ap;
+
+    // 初始化可变参数列表 `ap`
+    va_start(ap, fmt);
+    printf("panic: ");
+
+    vprintf(fmt, ap);
+    printf("\n");
+
+    // 设置 panicked 标志位，冻结其他 CPU 的 UART 输出
+    panicked = 1;
+
+    // 进入无限循环，使程序在此处停止运行
+    while (1)
+        ;
+}
+
+void assert(bool condition, const char *warning, ...)  
+{  
+    if (!condition)  
+    {  
+        va_list ap;  
+        va_start(ap, warning);  
+
+        // 在 panic 中使用标准格式字符串  
+        printf("Assertion failed: "); // 输出Assertion失败的提示  
+        vprintf(warning, ap); // 确保可以格式化输出警告信息  
+        printf("\n");  
+        
+        // 进入 panic 状态  
+        panic("Assertion failed: %s", warning);   
+
+        va_end(ap);  
+    }  
+}
+
+// void assert(bool condition, const char *warning, ...)  
+// {  
+//     if (!condition)  
+//     {  
+//         va_list ap;
+//         va_start(ap, warning);  
+//         panic(warning, ap); // 调用时传递 warning 和 ap 到 panic 内  
+//         va_end(ap);  
+//     }  
+// }
+```
