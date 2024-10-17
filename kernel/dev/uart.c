@@ -31,6 +31,8 @@
 
 extern volatile int panicked; // from printf.c
 
+static volatile spinlock_t uart_lock;
+
 // uart 初始化
 void uart_init(void)
 {
@@ -52,6 +54,8 @@ void uart_init(void)
 
   // 使能输出队列和接收队列的中断
   WriteReg(IER, IER_TX_ENABLE | IER_RX_ENABLE);
+
+  // spinlock_init(&uart_lock, "uart");
 }
 
 // 单个字符输出

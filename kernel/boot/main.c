@@ -18,7 +18,8 @@ int main()
     {
         print_init();
         // 调试信息
-        // printf("hart %d starting\n", mycpuid());
+        // panic("hart %d starting", 0);
+        assert(0,"%d err",1);
         // panic("%d %d %d\n", val1, val2, val3);
         started=1;
     }

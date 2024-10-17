@@ -79,8 +79,6 @@ void vprintf(const char *fmt, va_list ap)
     char *s;  
     spinlock_acquire(&print_lk); // 加锁以确保线程安全  
 
-    if (fmt == 0)  
-        panic("null fmt"); // 检查格式字符串是否为空  
 
     for (int i = 0; (c = fmt[i] & 0xff) != 0; ++i)  
     {  
@@ -131,53 +129,13 @@ void vprintf(const char *fmt, va_list ap)
 void printf(const char *fmt, ...)
 {
     va_list ap;
-    int i, c;
-    char *s;
-
-    spinlock_acquire(&print_lk);
-    if (fmt == 0)
-        panic("null fmt");
+    if (fmt == 0)  
+        panic("null fmt"); // 检查格式字符串是否为空  
     va_start(ap, fmt);
 
-    for (i = 0; (c = fmt[i] & 0xff) != 0; i++)
-    {
-        if (c != '%')
-        {
-            uart_putc_sync(c);
-            continue;
-        }
-        c = fmt[++i] & 0xff;
-        if (c == 0)
-            break;
-        switch (c)
-        {
-        case 'd':
-            printint(va_arg(ap, int), 10, 1);
-            break;
-        case 'x':
-            printint(va_arg(ap, int), 16, 1);
-            break;
-        case 'p':
-            printptr(va_arg(ap, uint64));
-            break;
-        case 's':
-            if ((s = va_arg(ap, char *)) == 0)
-                s = "(null)";
-            for (; *s; s++)
-                uart_putc_sync(*s);
-            break;
-        case '%':
-            uart_putc_sync('%');
-            break;
-        default:
-            // Print unknown % sequence to draw attention.
-            uart_putc_sync('%');
-            uart_putc_sync(c);
-            break;
-        }
-    }
-    // vprintf(fmt,ap);
-    spinlock_release(&print_lk);
+    vprintf(fmt,ap);
+
+    va_end(ap);
 }
 
 // void panic(char *s)
@@ -208,7 +166,6 @@ void panic(const char *fmt, ...)
 
     vprintf(fmt, ap);
     printf("\n");
-    va_end(ap);
 
     // 设置 panicked 标志位，冻结其他 CPU 的 UART 输出
     panicked = 1;
@@ -222,9 +179,13 @@ void assert(bool condition, const char *warning, ...)
 {  
     if (!condition)  
     {  
-        va_list ap;  
+        va_list ap,ap_copy;
         va_start(ap, warning);  
-        panic(warning, ap); // 调用时只传递 warning，处理 ap 在 panic 内  
+
+        va_copy(ap_copy, ap);
+        panic(warning, ap_copy); // 调用时只传递 warning，处理 ap 在 panic 内  
+
+        va_end(ap_copy);
         va_end(ap);  
     }  
 }
