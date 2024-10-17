@@ -138,32 +138,10 @@ void printf(const char *fmt, ...)
     va_end(ap);
 }
 
-// void panic(char *s)
-// {
-//   printf("panic: ");
-//   printf(s);
-//   printf("\n");
-//   panicked = 1; // freeze uart output from other CPUs
-//   for(;;)
-//     ;
-// }
+// 仿照vprintf，实现可变参数列表在panic、vpanic和assert之间的传递
+void vpanic(const char *fmt, va_list ap){
 
-// void assert(bool condition, const char* warning)
-// {
-//     if(!condition)
-//     {
-//         printf("Failed: %s\n", warning);
-//     }
-// }
-
-void panic(const char *fmt, ...)
-{
-    va_list ap;
-
-    // 初始化可变参数列表 `ap`
-    va_start(ap, fmt);
     printf("panic: ");
-
     vprintf(fmt, ap);
     printf("\n");
 
@@ -175,32 +153,21 @@ void panic(const char *fmt, ...)
         ;
 }
 
+void panic(const char *fmt, ...)
+{
+    va_list ap;
+    // 初始化可变参数列表 `ap`
+    va_start(ap, fmt);
+    vpanic(fmt, ap);
+}
+
 void assert(bool condition, const char *warning, ...)  
 {  
     if (!condition)  
     {  
         va_list ap;  
         va_start(ap, warning);  
-
-        // 在 panic 中使用标准格式字符串  
-        printf("Assertion failed: "); // 输出Assertion失败的提示  
-        vprintf(warning, ap); // 确保可以格式化输出警告信息  
-        printf("\n");  
-        
-        // 进入 panic 状态  
-        panic("Assertion failed: %s", warning);   
-
+        vpanic(warning, ap);
         va_end(ap);  
     }  
 }
-
-// void assert(bool condition, const char *warning, ...)  
-// {  
-//     if (!condition)  
-//     {  
-//         va_list ap;
-//         va_start(ap, warning);  
-//         panic(warning, ap); // 调用时传递 warning 和 ap 到 panic 内  
-//         va_end(ap);  
-//     }  
-// }

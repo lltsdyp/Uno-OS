@@ -339,25 +339,15 @@ void printf(const char *fmt, ...)
     va_end(ap);
 }
 ```
-为了满足自身调试需要，我们将panic函数和assert函数进行了修改，使其可以接受可变参数。在这里panic就是通过调用vprintf函数直接将可变参数列表传递输出，但由于panic函数自身不支持可变参数列表（猜测，但panic可以接收可变参数），所以再次对assert函数进行修改，依旧通过vprintf函数进行可变参数列表的传递和输出。
+为了满足自身调试需要，我们将panic函数和assert函数进行了修改，使其可以接受可变参数。在这里panic就是通过调用vprintf函数直接将可变参数列表传递输出，~~**但由于panic函数自身不支持可变参数列表（猜测，但panic可以接收可变参数）**，所以再次对assert函数进行修改，依旧通过vprintf函数进行可变参数列表的传递和输出。~~        
+再次思考上面的猜测之后突然想到既然panic函数不支持可变参数列表，那我是否可以**效仿printf函数和vprintf函数，自己再写一个vpanic函数**呢？经过验证之后，果然能解决传递可变参数列表这个问题了。
 ```c
 void panic(const char *fmt, ...)
 {
     va_list ap;
-
     // 初始化可变参数列表 `ap`
     va_start(ap, fmt);
-    printf("panic: ");
-
-    vprintf(fmt, ap);
-    printf("\n");
-
-    // 设置 panicked 标志位，冻结其他 CPU 的 UART 输出
-    panicked = 1;
-
-    // 进入无限循环，使程序在此处停止运行
-    while (1)
-        ;
+    vpanic(fmt, ap);
 }
 
 void assert(bool condition, const char *warning, ...)  
@@ -366,27 +356,8 @@ void assert(bool condition, const char *warning, ...)
     {  
         va_list ap;  
         va_start(ap, warning);  
-
-        // 在 panic 中使用标准格式字符串  
-        printf("Assertion failed: "); // 输出Assertion失败的提示  
-        vprintf(warning, ap); // 确保可以格式化输出警告信息  
-        printf("\n");  
-        
-        // 进入 panic 状态  
-        panic("Assertion failed: %s", warning);   
-
+        vpanic(warning, ap);
         va_end(ap);  
     }  
 }
-
-// void assert(bool condition, const char *warning, ...)  
-// {  
-//     if (!condition)  
-//     {  
-//         va_list ap;
-//         va_start(ap, warning);  
-//         panic(warning, ap); // 调用时传递 warning 和 ap 到 panic 内  
-//         va_end(ap);  
-//     }  
-// }
 ```
