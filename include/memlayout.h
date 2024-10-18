@@ -12,6 +12,7 @@
 // UART
 #define UART_BASE  0x10000000ul
 #define UART_IRQ   10
+#define UART_REGION_SIZE PGSIZE
 
 // platform-level interrupt controller(PLIC)
 #define PLIC_BASE 0x0c000000ul
@@ -23,12 +24,14 @@
 #define PLIC_SPRIORITY(hart) (PLIC_BASE + 0x201000 + (hart)*0x2000)
 #define PLIC_MCLAIM(hart) (PLIC_BASE + 0x200004 + (hart)*0x2000)
 #define PLIC_SCLAIM(hart) (PLIC_BASE + 0x201004 + (hart)*0x2000)
+#define PLIC_REGION_SIZE 0x400000
 
 // core local interruptor(CLINT)
 #define CLINT_BASE 0x2000000ul
 #define CLINT_MSIP(hartid) (CLINT_BASE + 4 * (hartid))
 #define CLINT_MTIMECMP(hartid) (CLINT_BASE + 0x4000 + 8 * (hartid))
 #define CLINT_MTIME (CLINT_BASE + 0xBFF8)
+#define CLINT_REGION_SIZE 0x10000
 
 
 #endif

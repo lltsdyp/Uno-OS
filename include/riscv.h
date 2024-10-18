@@ -284,4 +284,10 @@ static inline void sfence_vma()
   asm volatile("sfence.vma zero, zero");
 }
 
+static inline void change_pagetable(pgtbl_t pgtbl)
+{
+  w_satp(MAKE_SATP(pgtbl));
+  sfence_vma(); //每次切换页表之后都需要刷新TLB表项
+}
+
 // 内存管理相关

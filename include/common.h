@@ -21,6 +21,9 @@ typedef enum {false = 0, true = 1} bool;
 #endif
 
 #define NCPU 2
-#define PGSIZE=4096
+#define PGSIZE 4096
+
+// 定义页表层级，2代表三级页表结构（方便内存管理）
+#define PGTABLE_TOPLEVEL 2
 
 #endif

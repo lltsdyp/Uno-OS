@@ -48,6 +48,10 @@ typedef uint64* pgtbl_t;
 #define PA_TO_PTE(pa) ((((uint64)(pa)) >> 12) << 10)
 #define PTE_TO_PA(pte) (((pte) >> 10) << 12)
 
+// 用于页面的对齐
+#define PGROUNDUP(sz)  (((sz)+PGSIZE-1) & ~(PGSIZE-1))
+#define PGROUNDDOWN(a) (((a)) & ~(PGSIZE-1))
+
 // 页面权限控制 
 #define PTE_V (1 << 0) // valid
 #define PTE_R (1 << 1) // read
