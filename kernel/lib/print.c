@@ -43,7 +43,7 @@ static void printint(int xx, int base, int sign)
     // 如果xx是有符号整数且为正数，则会将sign更新成0
     // 因此，只有当xx是有符号整数且为负数的时候sign的值才会是非零
     // 可以用于后面对xx正负性的判断
-    if (sign && (xx < 0))
+    if (sign && (sign = xx < 0))
         x = -xx;
     else
         x = xx;
@@ -53,7 +53,8 @@ static void printint(int xx, int base, int sign)
     {
         // 将数值x转化成base进制，并将数据存储在buf中
         buf[len++] = digits[x % base];
-    } while ((x/base)!=0);
+    } while ((x /= base) != 0);
+
 
     if (xx < 0)
         consputc('-');
@@ -179,24 +180,6 @@ void printf(const char *fmt, ...)
     // vprintf(fmt,ap);
     spinlock_release(&print_lk);
 }
-
-// void panic(char *s)
-// {
-//   printf("panic: ");
-//   printf(s);
-//   printf("\n");
-//   panicked = 1; // freeze uart output from other CPUs
-//   for(;;)
-//     ;
-// }
-
-// void assert(bool condition, const char* warning)
-// {
-//     if(!condition)
-//     {
-//         printf("Failed: %s\n", warning);
-//     }
-// }
 
 void panic(const char *fmt, ...)
 {

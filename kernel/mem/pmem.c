@@ -41,21 +41,6 @@ void pmem_init(void)
     spinlock_init(&user_region.lk, "user_region_lock");
     user_region.list_head.next = NULL;
     freeRange(user_region.begin, user_region.end, false);
-
-    // // 将内核/用户可用页面添加到链表中
-    // for (uint64 addr = kern_region.begin; addr < kern_region.end; addr += PGSIZE)
-    // {
-    //     page_node_t *new_page = (page_node_t *)addr;
-    //     new_page->next = kern_region.list_head.next;
-    //     kern_region.list_head.next = new_page;
-    // }
-
-    // for (uint64 addr = user_region.begin; addr < user_region.end; addr += PGSIZE)
-    // {
-    //     page_node_t *new_page = (page_node_t *)addr;
-    //     new_page->next = user_region.list_head.next;
-    //     user_region.list_head.next = new_page;
-    // }
 }
 
 // 从内核或用户区域返回一个未使用的干净的物理页
@@ -70,15 +55,24 @@ void *pmem_alloc(bool in_kernel)
     {
         spinlock_release(&region->lk);
         panic("There is no empty page.");
-        return NULL;
     }
 
     // 获取链表头部的下一个节点，即第一个可用的物理页
     page_node_t *page = region->list_head.next;
-    region->list_head.next = page->next;
-    --region->allocable;
-    spinlock_release(&region->lk); 
-    memset(page, 5, PGSIZE);
+
+    if (page != NULL){
+        region->list_head.next = page->next;
+        --region->allocable;
+        spinlock_release(&region->lk); 
+        memset(page, 5, PGSIZE);
+    }
+    
+    else {
+        spinlock_release(&region->lk);
+        panic("Failed to allocate physical page!");
+    }
+
+    
     return (void *)page;
 }
 
