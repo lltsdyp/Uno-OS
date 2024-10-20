@@ -277,6 +277,8 @@ static inline uint64 r_ra()
   return x;
 }
 
+typedef uint64* pgtbl_t;
+
 // flush the TLB.
 static inline void sfence_vma()
 {
@@ -291,3 +293,8 @@ static inline void change_pagetable(pgtbl_t pgtbl)
 }
 
 // 内存管理相关
+
+// 分别用于将给定的字节数向上舍入到最接近的内存页大小的倍数
+// 以及向下舍入到最接近的内存页边界
+#define PGROUNDUP(sz)  (((sz)+PGSIZE-1) & ~(PGSIZE-1))
+#define PGROUNDDOWN(a) (((a)) & ~(PGSIZE-1))

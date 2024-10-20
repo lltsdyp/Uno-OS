@@ -18,7 +18,7 @@ pte_t *vm_getpte(pgtbl_t pgtbl, uint64 va, bool alloc)
     // 虚拟地址不能大于VA_MAX
     assert(va<=VA_MAX,"vm_getpte: invalid virtual address:%x",va);
 
-    uint round_va=PGROUNDDOWN(va);
+    uint64 round_va=PGROUNDDOWN(va);
     pte_t *pte=NULL;
     pgtbl_t result=pgtbl;
 
@@ -35,7 +35,7 @@ pte_t *vm_getpte(pgtbl_t pgtbl, uint64 va, bool alloc)
         else // 否则
         {
             // 不需要分配或物理内存不足则返回NULL
-            if(!alloc || (result=(pgtbl_t)pmem_alloc())==NULL)
+            if(!alloc || (result=(pgtbl_t)pmem_alloc(false))==NULL)
             {
                 return ((pgtbl_t)NULL);
             }
@@ -100,7 +100,7 @@ void vm_unmappages(pgtbl_t pgtbl, uint64 va, uint64 len, bool freeit)
 // 相当于填充kernel_pgtbl
 void kvm_init()
 {
-    kernel_pgtbl=(pgtbl_t)pmem_alloc();
+    kernel_pgtbl=(pgtbl_t)pmem_alloc(true);
     assert(kernel_pgtbl,"kvm_init: failed to initialize kernel page table.");
 
 
@@ -117,7 +117,7 @@ void kvm_init()
     vm_mappages(kernel_pgtbl, KERNEL_DATA, KERNEL_DATA,
             ALLOC_BEGIN-KERNEL_DATA,PTE_R|PTE_W);
     vm_mappages(kernel_pgtbl,ALLOC_BEGIN,ALLOC_BEGIN,
-            ALLOC_END-ALLOC_BEGIN,PTE_R|PTE_W)
+            ALLOC_END-ALLOC_BEGIN,PTE_R|PTE_W);
 }
 
 // 使用新的页表，刷新TLB

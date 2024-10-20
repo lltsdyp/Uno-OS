@@ -11,5 +11,6 @@ extern char ALLOC_END[];
 void  pmem_init(void);
 void* pmem_alloc(bool in_kernel);
 void  pmem_free(uint64 page, bool in_kernel);
+void  freeRange(uint64 begin, uint64 end, bool in_kernel);
 
 #endif

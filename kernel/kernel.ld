@@ -3,7 +3,7 @@ ENTRY( _entry )
 
 SECTIONS
 {
-  . = 0x80000000;
+  . = 0x80000000;     // qemu内核跳转的位置
 
   .text : {
     *(.text .text.*)
@@ -39,6 +39,6 @@ SECTIONS
   }
 
   . = ALIGN(4096);
-  PROVIDE(ALLOC_BEGIN = .);
-  PROVIDE(ALLOC_END = 0x80000000 + 128M);
+  PROVIDE(ALLOC_BEGIN = .);               // 0x80000000 开始位置
+  PROVIDE(ALLOC_END = 0x80000000 + 128M); // 0x80000000 + 128M 结束位置
 }
