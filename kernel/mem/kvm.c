@@ -9,6 +9,12 @@
 
 static pgtbl_t kernel_pgtbl; // 内核页表
 
+static inline void change_pagetable(pgtbl_t pgtbl)
+{
+  w_satp(MAKE_SATP(pgtbl));
+  sfence_vma(); //每次切换页表之后都需要刷新TLB表项
+}
+
 // 根据pagetable,找到va对应的pte
 // 若设置alloc=true 则在PTE无效时尝试申请一个物理页
 // 成功返回PTE, 失败返回NULL
@@ -45,7 +51,7 @@ pte_t *vm_getpte(pgtbl_t pgtbl, uint64 va, bool alloc)
         }
     }
 
-    return result[VA_TO_VPN(va,0)];
+    return (pte_t*)result[VA_TO_VPN(va,0)];
 }
 
 // 在pgtbl中建立 [va, va + len) -> [pa, pa + len) 的映射
@@ -67,7 +73,7 @@ void vm_mappages(pgtbl_t pgtbl, uint64 va, uint64 pa, uint64 len, int perm)
     {
         pte_t *pte=vm_getpte(pgtbl,beg,1);
         assert(pte!=NULL,"vm_mappages: cannot find pte for va:%x",beg);
-        assert(!(*pte&PTE_V),"vm_mappages: remap at %x",PTE_TO_PA(dst))
+        assert(!(*pte&PTE_V),"vm_mappages: remap at %x",PTE_TO_PA(dst));
         *pte=PA_TO_PTE(dst)|perm|PTE_V;
         dst+=PGSIZE;
     }
@@ -101,7 +107,7 @@ void vm_unmappages(pgtbl_t pgtbl, uint64 va, uint64 len, bool freeit)
 void kvm_init()
 {
     kernel_pgtbl=(pgtbl_t)pmem_alloc(true);
-    assert(kernel_pgtbl,"kvm_init: failed to initialize kernel page table.");
+    assert(kernel_pgtbl!=NULL,"kvm_init: failed to initialize kernel page table.");
 
 
     vm_mappages(kernel_pgtbl, UART_BASE, UART_BASE, 
@@ -112,12 +118,12 @@ void kvm_init()
             PLIC_REGION_SIZE, PTE_R|PTE_W);
 
     // kernel
-    vm_mappages(kernel_pgtbl, KERNEL_BASE, KERNEL_BASE,
-            KERNEL_DATA-KERNEL_BASE,PTE_R|PTE_W|PTE_X);
-    vm_mappages(kernel_pgtbl, KERNEL_DATA, KERNEL_DATA,
-            ALLOC_BEGIN-KERNEL_DATA,PTE_R|PTE_W);
-    vm_mappages(kernel_pgtbl,ALLOC_BEGIN,ALLOC_BEGIN,
-            ALLOC_END-ALLOC_BEGIN,PTE_R|PTE_W);
+    vm_mappages(kernel_pgtbl, (uint64)KERNEL_BASE, (uint64)KERNEL_BASE,
+            (uint64)KERNEL_DATA-(uint64)KERNEL_BASE,PTE_R|PTE_W|PTE_X);
+    vm_mappages(kernel_pgtbl, (uint64)KERNEL_DATA, (uint64)KERNEL_DATA,
+            (uint64)ALLOC_BEGIN-(uint64)KERNEL_DATA,PTE_R|PTE_W);
+    vm_mappages(kernel_pgtbl,(uint64)ALLOC_BEGIN,(uint64)ALLOC_BEGIN,
+            (uint64)ALLOC_END-(uint64)ALLOC_BEGIN,PTE_R|PTE_W);
 }
 
 // 使用新的页表，刷新TLB

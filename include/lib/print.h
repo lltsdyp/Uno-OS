@@ -9,5 +9,5 @@ void printf(const char* fmt, ...);
 // void assert(bool condition, const char* warning);
 
 void panic(const char *fmt, ...);
-void assert(bool condition, const char* warning, ...);
+void assert(int condition, const char* warning, ...);
 #endif

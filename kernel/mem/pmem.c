@@ -28,16 +28,16 @@ static alloc_region_t kern_region, user_region;
 // 物理内存初始化函数
 void pmem_init(void)
 {
-    kern_region.begin = ALLOC_BEGIN;
-    kern_region.end = ALLOC_BEGIN + KERN_PAGES * PGSIZE;
-    kern_region.allocable = KERN_PAGES;
+    kern_region.begin = (uint64)ALLOC_BEGIN;
+    kern_region.end = (uint64)ALLOC_BEGIN + (uint64)KERN_PAGES * PGSIZE;
+    kern_region.allocable = (uint64)KERN_PAGES;
     spinlock_init(&kern_region.lk, "kern_region_lock");
     kern_region.list_head.next = NULL;
     freeRange(kern_region.begin, kern_region.end, true);
 
-    user_region.begin = ALLOC_BEGIN + KERN_PAGES * PGSIZE;
-    user_region.end = ALLOC_END;
-    user_region.allocable = (ALLOC_END - ALLOC_BEGIN) / PGSIZE - KERN_PAGES;
+    user_region.begin = (uint64)ALLOC_BEGIN + (uint64)KERN_PAGES * PGSIZE;
+    user_region.end = (uint64)ALLOC_END;
+    user_region.allocable = ((uint64)ALLOC_END - (uint64)ALLOC_BEGIN) / PGSIZE - (uint64)KERN_PAGES;
     spinlock_init(&user_region.lk, "user_region_lock");
     user_region.list_head.next = NULL;
     freeRange(user_region.begin, user_region.end, false);

@@ -286,15 +286,10 @@ static inline void sfence_vma()
   asm volatile("sfence.vma zero, zero");
 }
 
-static inline void change_pagetable(pgtbl_t pgtbl)
-{
-  w_satp(MAKE_SATP(pgtbl));
-  sfence_vma(); //每次切换页表之后都需要刷新TLB表项
-}
+// static inline void change_pagetable(pgtbl_t pgtbl)
+// {
+//   w_satp(MAKE_SATP(pgtbl));
+//   sfence_vma(); //每次切换页表之后都需要刷新TLB表项
+// }
 
 // 内存管理相关
-
-// 分别用于将给定的字节数向上舍入到最接近的内存页大小的倍数
-// 以及向下舍入到最接近的内存页边界
-#define PGROUNDUP(sz)  (((sz)+PGSIZE-1) & ~(PGSIZE-1))
-#define PGROUNDDOWN(a) (((a)) & ~(PGSIZE-1))
