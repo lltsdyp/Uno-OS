@@ -26,32 +26,34 @@ pte_t *vm_getpte(pgtbl_t pgtbl, uint64 va, bool alloc)
 
     uint64 round_va=PGROUNDDOWN(va);
     pte_t *pte=NULL;
-    pgtbl_t result=pgtbl;
+    pgtbl_t current_pgtbl=pgtbl;
 
     for(int i=PGTABLE_TOPLEVEL;i>0;--i)
     {
         int idx=VA_TO_VPN(round_va,i);
-        pte = &result[idx];
+        pte = &current_pgtbl[idx];
 
         // 此前该虚拟页已被分配
         if(*pte & PTE_V)
         {
-            result=(pgtbl_t)PTE_TO_PA(*pte);
+            current_pgtbl=(pgtbl_t)PTE_TO_PA(*pte);
         }
         else // 否则
         {
             // 不需要分配或物理内存不足则返回NULL
-            if(!alloc || (result=(pgtbl_t)pmem_alloc(false))==NULL)
+            if(!alloc || (current_pgtbl=(pgtbl_t)pmem_alloc(false))==NULL)
             {
                 return ((pgtbl_t)NULL);
             }
             // 分配页面
-            memset(result,0,PGSIZE);
-            *pte=PA_TO_PTE(*pte)|PTE_V;
+            // 此时current_pgtbl储存着新的页表，将其填充0来初始化
+            memset(current_pgtbl,0,PGSIZE);
+            // 原有位置的页表项应当指向新页表的地址
+            *pte=PA_TO_PTE(current_pgtbl)|PTE_V;
         }
     }
 
-    return (pte_t*)result[VA_TO_VPN(va,0)];
+    return (pte_t*)&current_pgtbl[VA_TO_VPN(va,0)];
 }
 
 // 在pgtbl中建立 [va, va + len) -> [pa, pa + len) 的映射
@@ -73,7 +75,10 @@ void vm_mappages(pgtbl_t pgtbl, uint64 va, uint64 pa, uint64 len, int perm)
     {
         pte_t *pte=vm_getpte(pgtbl,beg,1);
         assert(pte!=NULL,"vm_mappages: cannot find pte for va:%x",beg);
-        assert(!(*pte&PTE_V),"vm_mappages: remap at %x",PTE_TO_PA(dst));
+        // 测试用例里面存在着这么一种特殊情况：
+        // 如果之前已经存在va->pa的映射（即，想要映射到pa的va没有发生改变）
+        // 那么，我们只会修改他的属性位，不要报remap错误
+        assert(!(*pte&PTE_V) || (PTE_TO_PA(*pte) == pa),"vm_mappages: remap at %x",PTE_TO_PA(dst));
         *pte=PA_TO_PTE(dst)|perm|PTE_V;
         dst+=PGSIZE;
     }
@@ -96,7 +101,7 @@ void vm_unmappages(pgtbl_t pgtbl, uint64 va, uint64 len, bool freeit)
         assert(PTE_FLAGS(*pte)!=PTE_V,"vm_unmappages: %x is NOT a leaf page.",PTE_TO_PA(*pte));
         if(freeit)
         {
-            pmem_free(PTE_TO_PA(*pte),1);
+            pmem_free(PTE_TO_PA(*pte),pgtbl==kernel_pgtbl);
         }
         *pte=0;
     }
@@ -107,6 +112,7 @@ void vm_unmappages(pgtbl_t pgtbl, uint64 va, uint64 len, bool freeit)
 void kvm_init()
 {
     kernel_pgtbl=(pgtbl_t)pmem_alloc(true);
+    memset(kernel_pgtbl,0,PGSIZE);
     assert(kernel_pgtbl!=NULL,"kvm_init: failed to initialize kernel page table.");
 
 

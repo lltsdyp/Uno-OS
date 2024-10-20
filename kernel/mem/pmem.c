@@ -64,7 +64,7 @@ void *pmem_alloc(bool in_kernel)
         region->list_head.next = page->next;
         --region->allocable;
         spinlock_release(&region->lk); 
-        memset(page, 5, PGSIZE);
+        memset(page, 0, PGSIZE);
     }
     
     else {

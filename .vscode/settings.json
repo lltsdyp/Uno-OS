@@ -12,6 +12,8 @@
         "uart.h": "c",
         "print.h": "c",
         "riscv.h": "c",
-        "vmem.h": "c"
+        "vmem.h": "c",
+        "chrono": "c",
+        "functional": "c"
     }
 }
