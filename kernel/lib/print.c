@@ -43,10 +43,14 @@ static void printint(int xx, int base, int sign)
     // 如果xx是有符号整数且为正数，则会将sign更新成0
     // 因此，只有当xx是有符号整数且为负数的时候sign的值才会是非零
     // 可以用于后面对xx正负性的判断
-    if (sign && (xx < 0))
-        x = -xx;
-    else
-        x = xx;
+    if (base == 10){
+        if (sign && (sign = xx < 0))
+            x = -xx;
+        else 
+            x = xx;
+    }
+    else 
+        x = (uint32)xx;
 
     len = 0;
     do
@@ -55,7 +59,13 @@ static void printint(int xx, int base, int sign)
         buf[len++] = digits[x % base];
     } while ((x /= base) != 0);
 
-    if (xx < 0)
+    // if (base == 16)
+    // {
+    //     consputc('0');
+    //     consputc('x');
+    // }
+        
+    if (sign)
         consputc('-');
 
     while (len > 0)
