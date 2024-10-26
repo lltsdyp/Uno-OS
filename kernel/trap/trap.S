@@ -99,10 +99,10 @@ timer_vector:
         sd a2, 8(a0)      # mscratch[1] = a2
         sd a3, 16(a0)     # mscratch[2] = a3
 
-        # CLINT_MTIMECMP(hartid) = CLINT_MTIMECMP(hartid) + INTERVAL
+        # *(uint64)CLINT_MTIMECMP(current_cpuid)=*(uint64*)CLINT_MTIME+TIMER_INTERVAL;
         # 以便响应下一次时钟中断
         ld a1, 24(a0)     # a1 = mscratch[3] 里面放了 CLINT_MTIMECMP(hartid)
-        ld a2, 32(a0)     # a2 = mscratch[4] 里面放了 INTERVAL        
+        ld a2, 32(a0)     # a2 = mscratch[4] 里面放了 TIMER_INTERVAL        
         ld a3, 0(a1)
         add a3, a3, a2
         sd a3, 0(a1)

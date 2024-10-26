@@ -142,13 +142,14 @@ void printf(const char *fmt, ...)
 void panic(const char *fmt, ...)
 {
     va_list ap;
+    print_lk.locked=0;
 
     // 初始化可变参数列表 `ap`
     va_start(ap, fmt);
-    printf("panic: ");
+    vprintf("panic: ",0);
 
     vprintf(fmt, ap);
-    printf("\n");
+    vprintf("\n",0);
     va_end(ap);
 
     // 设置 panicked 标志位，冻结其他 CPU 的 UART 输出

@@ -7,6 +7,8 @@
 #include "memlayout.h"
 #include "riscv.h"
 
+#include "trap/intrno.h"
+
 // 中断信息
 static char* interrupt_info[16] = {
     "U-mode software interrupt",      // 0
@@ -54,25 +56,31 @@ extern void kernel_vector();
 // 初始化trap中全局共享的东西
 void trap_kernel_init()
 {
-
+    timer_create();
 }
 
 // 各个核心trap初始化
+// 即设置stvec寄存器，发生中断跳转到kernel_vector函数处理
 void trap_kernel_inithart()
 {
-
+    w_stvec((uint64)kernel_vector);
 }
 
 // 外设中断处理 (基于PLIC)
 void external_interrupt_handler()
 {
-
+    return;
 }
 
 // 时钟中断处理 (基于CLINT)
 void timer_interrupt_handler()
 {
-
+    // 清除中断标志位
+    w_sip(r_sip() & ~2);
+    // 避免重复更新时钟
+    if(mycpuid()==0)
+        timer_update();
+    printf("di da\n");
 }
 
 // 在kernel_vector()里面调用
@@ -90,5 +98,23 @@ void trap_kernel_handler()
 
     int trap_id = scause & 0xf; 
 
+    // 暂未实现对异常的处理
+    assert(IS_INTR(scause),"Unhandled exception,\n\tsepc:%x,scause:%x,sstatus:%x,stval:%x\n\tdescription:%s"
+                ,sepc,scause,sstatus,stval,exception_info[trap_id]);
+
     // 中断异常处理核心逻辑
+
+    // M模式下的时钟中断会触发S模式下的软件中断，因此判断trap_id是否为SMODE_SOFTWARE_INTERRUPT即可
+    // 新增中断处理表项时需在trap/intrno.h中添加常量定义，不要使用magic number.
+    switch(trap_id)
+    {
+        case SMODE_SOFTWARE_INTERRUPT:
+            timer_interrupt_handler();
+            break;
+        case SMODE_EXTERNAL_INTERRUPT:
+            external_interrupt_handler();
+            break;
+        default:
+            panic("Unknown trap id %x,\n\tdescription:%s",trap_id,interrupt_info[trap_id]);
+    }
 }

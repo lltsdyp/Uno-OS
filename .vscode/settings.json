@@ -14,6 +14,10 @@
         "riscv.h": "c",
         "vmem.h": "c",
         "chrono": "c",
-        "functional": "c"
+        "functional": "c",
+        "pmem.h": "c",
+        "timer.h": "c",
+        "memlayout.h": "c",
+        "trap.h": "c"
     }
 }
