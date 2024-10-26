@@ -107,7 +107,6 @@ void freeRange(uint64 begin, uint64 end, bool in_kernel)
     char *p;
     p = (char *)PGROUNDUP((uint64)begin);
     for (; p + PGSIZE <= (char *)end; p += PGSIZE){
-        printf("initializing:%p\n",p);
         pmem_free((uint64)p, in_kernel);
     }
 }

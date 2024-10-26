@@ -18,6 +18,18 @@
         "pmem.h": "c",
         "timer.h": "c",
         "memlayout.h": "c",
-        "trap.h": "c"
+        "trap.h": "c",
+        "testcases.h": "c",
+        "intrno.h": "c",
+        "plic.h": "c",
+        "string": "c",
+        "array": "c",
+        "deque": "c",
+        "unordered_map": "c",
+        "vector": "c",
+        "string_view": "c",
+        "format": "c",
+        "initializer_list": "c",
+        "span": "c"
     }
 }

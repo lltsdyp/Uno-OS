@@ -64,6 +64,8 @@ void trap_kernel_init()
 void trap_kernel_inithart()
 {
     w_stvec((uint64)kernel_vector);
+
+    intr_on();
 }
 
 // 外设中断处理 (基于PLIC)
@@ -80,7 +82,6 @@ void timer_interrupt_handler()
     // 避免重复更新时钟
     if(mycpuid()==0)
         timer_update();
-    printf("di da\n");
 }
 
 // 在kernel_vector()里面调用

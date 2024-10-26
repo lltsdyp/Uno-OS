@@ -24,6 +24,6 @@ void timer_interrupt_handler();
 
 // 辅助宏：判断是否为中断
 #define INTR_BIT 0x8000000000000000
-#define IS_INTR(cause) ((uint64)cause&INTR_BIT)
+#define IS_INTR(x) (((uint64)(x))&(INTR_BIT))
 
 #endif

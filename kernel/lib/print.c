@@ -160,7 +160,8 @@ void panic(const char *fmt, ...)
         ;
 }
 
-void assert(int condition, const char *warning, ...)
+// 为什么condition的类型是uint64呢。。。:(
+void assert(uint64 condition, const char *warning, ...)
 {
     if (!condition)
     {
