@@ -24,19 +24,19 @@ QEMUGDB = $(shell if $(QEMU) -help | grep -q '^-gdb'; \
 build: $(KERN)
 
 # qemu运行
-qemu: $(KERN)
+qemu: clean $(KERN)
 	$(QEMU) $(QEMUOPTS)
 
 .gdbinit-gui: .gdbinit.tmpl-riscv-gui
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
-qemu-gdb-gui: $(KERN) .gdbinit-gui
+qemu-gdb-gui: clean $(KERN) .gdbinit-gui
 	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
 
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
-qemu-gdb: $(KERN) .gdbinit
+qemu-gdb: clean $(KERN) .gdbinit
 	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
 
 clean:
