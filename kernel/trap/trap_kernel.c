@@ -66,6 +66,7 @@ void trap_kernel_inithart()
     w_stvec((uint64)kernel_vector);
 
     intr_on();
+    mycpu()->noff = 0; //强制打开
 }
 
 // 外设中断处理 (基于PLIC)
