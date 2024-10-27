@@ -176,6 +176,41 @@ void trap_kernel_handler()
 
 首先，它会进行相应的权限检查，然后，根据`scause`中指定的`trap_id`调用不同的中断处理函数，如`timer_interrupt_handler()`。
 
+将上述代码注册完成后，我们将对`trap_kernel_init()`和对`trap_kernel_inithart()`的调用加入到`main()`函数中，需要注意，这两个函数的调用必须发生在相当早期的阶段，否则系统可能由于在发生时钟中断后，尝试跳转到S模式的处理函数失败，而陷入死循环。
+
+``` c
+int main()
+{
+    intr_off();
+    if (mycpuid() == 0)
+    {
+        print_init();
+        trap_kernel_init();
+        trap_kernel_inithart();
+        pmem_init();
+        kvm_init();
+        kvm_inithart();
+        plic_init();
+        plic_inithart();
+        __sync_synchronize();
+        started=1;
+    }
+    else
+    {
+        //等待cpu0完成所有启动所需的初始化工作
+        while (!started)
+            ;
+        __sync_synchronize();
+        trap_kernel_inithart();
+        kvm_inithart();
+        plic_inithart();
+    }
+    printf("hart %d starting\n", mycpuid());
+    while (1)
+        ;
+}
+```
+
 ## Bug fixed
 - `assert`函数的condition类型从`int`修改为`uint64`
 
