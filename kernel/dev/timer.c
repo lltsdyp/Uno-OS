@@ -8,14 +8,6 @@
 
 // in trap.S M-mode时钟中断处理流程()
 extern void timer_vector();
-extern void pre_timer_vector();
-__attribute__((aligned(4)))
-void dumb_debug()
-{
-    w_sip(r_sip() & ~2);
-    asm volatile("ret");
-}
-
 
 
 // 每个CPU在时钟中断中需要的临时空间(考虑为什么可以这么写)

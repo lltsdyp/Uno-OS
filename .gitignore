@@ -2,3 +2,4 @@
 *.d
 kernel-qemu
 .gdbinit-gui
+.gdbinit
