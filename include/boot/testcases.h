@@ -155,11 +155,11 @@ int main()
     if (mycpuid() == 0)
     {
         print_init();
-        trap_kernel_init();
-        trap_kernel_inithart();
         pmem_init();
         kvm_init();
         kvm_inithart();
+        trap_kernel_init();
+        trap_kernel_inithart();
         plic_init();
         plic_inithart();
         __sync_synchronize();
@@ -171,8 +171,8 @@ int main()
         while (!started)
             ;
         __sync_synchronize();
-        trap_kernel_inithart();
         kvm_inithart();
+        trap_kernel_inithart();
         plic_inithart();
     }
     printf("hart %d starting\n", mycpuid());

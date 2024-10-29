@@ -133,6 +133,7 @@ void trap_kernel_handler()
             panic("Unknown trap id %x,\n\tdescription:%s",trap_id,interrupt_info[trap_id]);
     }
 
+    // 恢复前述状态
     w_sepc(sepc);
     w_sstatus(sstatus);
 }

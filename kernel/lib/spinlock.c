@@ -6,18 +6,14 @@
 // 带层数叠加的关中断
 void push_off(void)
 {
-    mycpu()->noff++;
     int interrupt_status=intr_get();
 
-    // 层数大于等于1，说明需要关闭中断
-    if(mycpu()->noff>=1)
+    intr_off();
+    if(mycpu()->noff==0)
     {
-        intr_off();
-        if(mycpu()->noff==1)
-        {
-            mycpu()->origin=interrupt_status;
-        }
+        mycpu()->origin=interrupt_status;
     }
+    mycpu()->noff++;
 }
 
 // 带层数叠加的开中断
@@ -26,9 +22,9 @@ void pop_off(void)
     int interrupt_status=intr_get();
 
     assert(interrupt_status==0, "spinlock_pop_off: interruptible");
-    assert(mycpu()->noff>=0, "spinlock_pop_off: no interrupts were disabled!");
+    assert(mycpu()->noff>0, "spinlock_pop_off: no interrupts were disabled!");
     mycpu()->noff--;
-    if(mycpu()->noff==0)
+    if(mycpu()->noff==0 && mycpu()->origin)
     {
         intr_on();
     }
