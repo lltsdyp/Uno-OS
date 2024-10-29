@@ -70,9 +70,21 @@ void trap_kernel_inithart()
 }
 
 // 外设中断处理 (基于PLIC)
-void external_interrupt_handler()
-{
-    return;
+// 已经可以确认就是一个外部中断？
+void external_interrupt_handler()  
+{  
+    int irq = plic_claim(); // 获取中断号 //处理 UART 中断 
+    
+    if (!irq) {
+        return ;      // 中断号为0，直接忽略；
+    } else if (irq == UART_IRQ) 
+    {  
+        uart_intr(); // 调用 UART 中断处理程序 
+    } else{
+        printf("Unexpected interrupt irq = %d\n", irq);
+    }
+
+    plic_complete(irq); // 确认中断处理完成
 }
 
 // 时钟中断处理 (基于CLINT)
