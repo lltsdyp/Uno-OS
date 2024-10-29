@@ -95,6 +95,7 @@ void timer_interrupt_handler()
     // 避免重复更新时钟
     if(mycpuid()==0)
         timer_update();
+    printf("CPUID:%d di da\n",mycpuid());
 }
 
 // 在kernel_vector()里面调用
@@ -131,4 +132,7 @@ void trap_kernel_handler()
         default:
             panic("Unknown trap id %x,\n\tdescription:%s",trap_id,interrupt_info[trap_id]);
     }
+
+    w_sepc(sepc);
+    w_sstatus(sstatus);
 }
