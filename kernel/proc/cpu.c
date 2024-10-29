@@ -13,3 +13,8 @@ int mycpuid(void)
     uint64 id=r_tp();
     return (int)id;
 }
+
+proc_t* myproc(void)
+{
+    
+}

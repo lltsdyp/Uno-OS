@@ -1,14 +1,18 @@
 include common.mk
 
 KERN = kernel
+USER = user
 KERNEL_ELF = kernel-qemu
 CPUNUM = 2
 FS_IMG = none
 
-.PHONY: clean $(KERN)
+.PHONY: clean $(KERN) $(USER)
 
 $(KERN):
 	$(MAKE) build --directory=$@
+
+$(USER):
+	$(MAKE) init --directory=$@
 
 # QEMU相关配置
 QEMU     =  qemu-system-riscv64
@@ -24,19 +28,19 @@ QEMUGDB = $(shell if $(QEMU) -help | grep -q '^-gdb'; \
 build: $(KERN)
 
 # qemu运行
-qemu: clean $(KERN)
+qemu: clean $(USER) $(KERN)
 	$(QEMU) $(QEMUOPTS)
 
 .gdbinit-gui: .gdbinit.tmpl-riscv-gui
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
-qemu-gdb-gui: clean $(KERN) .gdbinit-gui
+qemu-gdb-gui: clean $(KERN) $(USER) .gdbinit-gui
 	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
 
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
-qemu-gdb: clean $(KERN) .gdbinit
+qemu-gdb: clean $(KERN) $(USER) .gdbinit
 	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
 
 clean:

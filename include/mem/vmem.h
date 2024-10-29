@@ -64,9 +64,6 @@ typedef uint64* pgtbl_t;
 // 获取低10bit的flag信息
 #define PTE_FLAGS(pte) ((pte) & 0x3FF)
 
-// 定义一个相当大的VA, 规定所有VA不得大于它
-#define VA_MAX (1ul << 38)
-
 void   vm_print(pgtbl_t pgtbl);
 pte_t* vm_getpte(pgtbl_t pgtbl, uint64 va, bool alloc);
 void   vm_mappages(pgtbl_t pgtbl, uint64 va, uint64 pa, uint64 len, int perm);

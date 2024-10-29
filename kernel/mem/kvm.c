@@ -130,6 +130,8 @@ void kvm_init()
             (uint64)ALLOC_BEGIN-(uint64)KERNEL_DATA,PTE_R|PTE_W);
     vm_mappages(kernel_pgtbl,(uint64)ALLOC_BEGIN,(uint64)ALLOC_BEGIN,
             (uint64)ALLOC_END-(uint64)ALLOC_BEGIN,PTE_R|PTE_W);
+
+    // TODO:新增映射
 }
 
 // 使用新的页表，刷新TLB

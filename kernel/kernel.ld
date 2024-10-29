@@ -3,17 +3,15 @@ ENTRY( _entry )
 
 SECTIONS
 {
-  . = 0x80000000;     /* qemu内核跳转的位置 */
+  . = 0x80000000;
 
   .text : {
     *(.text .text.*)
     . = ALIGN(0x1000);
-    /*
     _trampoline = .;
     *(trampsec)
     . = ALIGN(0x1000);
     ASSERT(. - _trampoline == 0x1000, "error: trampoline larger than one page");
-    */
     PROVIDE(KERNEL_DATA = .);
   }
 
@@ -39,6 +37,6 @@ SECTIONS
   }
 
   . = ALIGN(4096);
-  PROVIDE(ALLOC_BEGIN = .);               /* 0x80000000 开始位置 */
-  PROVIDE(ALLOC_END = 0x80000000 + 128M); /* 0x80000000 + 128M 结束位置 */
+  PROVIDE(ALLOC_BEGIN = .);
+  PROVIDE(ALLOC_END = 0x80000000 + 128M);
 }
