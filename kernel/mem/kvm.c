@@ -78,7 +78,7 @@ void vm_mappages(pgtbl_t pgtbl, uint64 va, uint64 pa, uint64 len, int perm)
         // 测试用例里面存在着这么一种特殊情况：
         // 如果之前已经存在va->pa的映射（即，想要映射到pa的va没有发生改变）
         // 那么，我们只会修改他的属性位，不要报remap错误
-        assert(!(*pte&PTE_V) || (PTE_TO_PA(*pte) == pa),"vm_mappages: remap at %x",PTE_TO_PA(dst));
+        assert(!(*pte&PTE_V) || (PTE_TO_PA(*pte) == pa),"vm_mappages: remap at %p",beg);
         *pte=PA_TO_PTE(dst)|perm|PTE_V;
         dst+=PGSIZE;
     }
@@ -112,7 +112,7 @@ void vm_unmappages(pgtbl_t pgtbl, uint64 va, uint64 len, bool freeit)
 void kstack_init()
 {
     // 当前只有一个进程，所以只要初始化一个即可
-    vm_mappages(kernel_pgtbl, KSTACK(1), KSTACK_BASE_PA(0), KSTACK_SIZE, PTE_R | PTE_W);
+    vm_mappages(kernel_pgtbl, KSTACK(0), (uint64)pmem_alloc(true), KSTACK_SIZE, PTE_R | PTE_W);
 }
 
 // 完成 UART CLINT PLIC 内核代码区 内核数据区 可分配区域 的映射
@@ -140,6 +140,8 @@ void kvm_init()
             (uint64)ALLOC_END-(uint64)ALLOC_BEGIN,PTE_R|PTE_W);
 
     vm_mappages(kernel_pgtbl, TRAMPOLINE, TRAMPOLINE_BASE_PA, TRAMPOLINE_SIZE, PTE_R|PTE_X);
+
+    kstack_init();
 }
 
 // 使用新的页表，刷新TLB

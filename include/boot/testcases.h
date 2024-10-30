@@ -31,6 +31,7 @@ int main()
         // 调试信息
         // printf("hart %d starting\n", mycpuid());
         // panic("%d %d %d\n", val1, val2, val3);
+        printf("%p\n",0x3fffffe000);
         started=1;
     }
     else
