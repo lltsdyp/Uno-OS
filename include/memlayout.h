@@ -50,7 +50,7 @@
 #define KSTACK_SIZE PGSIZE
 
 // 用户页表中的用户栈底地址（因为栈是从高地址向低地址增长，所以栈底地址为栈最高位置的地址）
-#define USER_STACK_BOTTOM (TRAPFRAME-1)
+#define USER_STACK_BOTTOM TRAMPOLINE
 // 定义一开始分配用户栈的页面数
 #define USER_STACK_INITIAL_PAGE_COUNT 1
 // 最低的4096不分配，所以从4096开始分配

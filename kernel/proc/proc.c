@@ -40,7 +40,7 @@ void user_pagetable_alloc(pgtbl_t pgtbl)
     }
 
     proczero.tf->sp=USER_STACK_BOTTOM;
-    proczero.ctx.sp=USER_STACK_BOTTOM;
+    proczero.ctx.sp=KSTACK(0)+PGSIZE;
 
     uint64 addr=0;
 
@@ -88,8 +88,7 @@ void proc_make_first()
     proczero.ctx.ra=(uint64)trap_user_return;
 
     // 内核字段设置
-    kstack_init();
-    proczero.kstack = KSTACK(1);
+    proczero.kstack = KSTACK(0);
 
     // 上下文切换
     swtch(&(mycpu()->ctx), &(proczero.ctx));
