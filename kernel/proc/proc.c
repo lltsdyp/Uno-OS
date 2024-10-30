@@ -26,13 +26,7 @@ pgtbl_t proc_pgtbl_init(uint64 trapframe)
     memset(pgtbl, 0, PGSIZE);
     vm_mappages(pgtbl, TRAMPOLINE, (uint64)trampoline, TRAMPOLINE_SIZE, PTE_X | PTE_R);
     vm_mappages(pgtbl, TRAPFRAME, trapframe, PGSIZE, PTE_W | PTE_R);
-    return pgtbl;
-}
 
-// 初始化用户页表
-// pgtbl:给定的用户页表
-void user_pagetable_alloc(pgtbl_t pgtbl)
-{
     // ustack 映射 + 设置 ustack_pages
     for (int i = 0; i < USER_STACK_INITIAL_PAGE_COUNT; ++i)
     {
@@ -42,13 +36,21 @@ void user_pagetable_alloc(pgtbl_t pgtbl)
 
     proczero.tf->sp=USER_STACK_BOTTOM;
     proczero.ctx.sp=KSTACK(proczero.pid)+PGSIZE;
+    proczero.ustack_pages = USER_STACK_INITIAL_PAGE_COUNT;
 
+    return pgtbl;
+}
+
+// 将initcode加载到内存中
+// pgtbl:给定的用户页表
+void load_initcode(pgtbl_t pgtbl)
+{
     uint64 addr=0;
 
     // data + code 映射
     assert(initcode_len <= PGSIZE, "proc_make_first: initcode too big\n");
 
-    vm_mappages(pgtbl, USER_VMEM_START, addr=(uint64)pmem_alloc(true),
+    vm_mappages(pgtbl, USER_VMEM_START, addr=(uint64)pmem_alloc(false),
                 PGSIZE, PTE_U | PTE_R | PTE_X | PTE_W);
     memmove((void *)addr,initcode,initcode_len);
 }
@@ -75,9 +77,8 @@ void proc_make_first()
     proczero.tf = (trapframe_t *)pmem_alloc(false);
     proczero.pgtbl = proc_pgtbl_init((uint64)proczero.tf);
 
-    // ustack 映射 + 设置 ustack_pages
-    user_pagetable_alloc(proczero.pgtbl);
-    proczero.ustack_pages = USER_STACK_INITIAL_PAGE_COUNT;
+    // 加载程序
+    load_initcode(proczero.pgtbl);
 
     // 设置 heap_top
     proczero.heap_top = USER_VMEM_START + PGSIZE;
