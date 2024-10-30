@@ -4,6 +4,7 @@
 #include "mem/vmem.h"
 #include "memlayout.h"
 #include "riscv.h"
+#include "trap/intrno.h"
 
 // in trampoline.S
 extern char trampoline[];  // 内核和用户切换的代码
@@ -17,11 +18,6 @@ extern char kernel_vector[]; // 内核态trap处理流程
 extern char *interrupt_info[16]; // 中断错误信息
 extern char *exception_info[16]; // 异常错误信息
 
-// in intrno.h
-extern SMODE_SYSCALL_INTERRUPT;
-extern SMODE_SOFTWARE_INTERRUPT;
-extern SMODE_EXTERNAL_INTERRUPT;
-
 // 在user_vector()里面调用
 // 用户态trap处理的核心逻辑
 void trap_user_handler()
@@ -30,7 +26,7 @@ void trap_user_handler()
     uint64 sepc = r_sepc();       // 记录了发生异常时的pc值
     uint64 sstatus = r_sstatus(); // 与特权模式和中断相关的状态信息
     uint64 scause = r_scause();   // 引发trap的原因
-    uint64 stval = r_stval();     // 发生trap时保存的附加信息(不同trap不一样)
+    // uint64 stval = r_stval();     // 发生trap时保存的附加信息(不同trap不一样)
 
     proc_t *p = myproc();
     int trap_id = scause & 0xf;
@@ -94,7 +90,7 @@ void trap_user_return()
     w_sepc(p->tf->epc);
 
      // 告诉 trampoline.S 切换到的用户页表
-    uint64 satp = MAKE_SATP(p->pagetable);
+    uint64 satp = MAKE_SATP(p->pgtbl);
 
     // 跳转到 trampoline.S，切换到用户页表，恢复用户寄存器，并通过 sret 切换到用户模式
     uint64 fn = TRAMPOLINE + ((uint64)user_return - (uint64)trampoline);

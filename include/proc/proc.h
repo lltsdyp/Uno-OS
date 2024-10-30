@@ -81,7 +81,7 @@ typedef struct proc {
 } proc_t;
 
 
-void     proc_make_fisrt();                      // 创建第一个进程并切换到它执行
+void     proc_make_first();                      // 创建第一个进程并切换到它执行
 pgtbl_t  proc_pgtbl_init(uint64 trapframe);      // 进程页表的初始化和基本映射
 
 #endif

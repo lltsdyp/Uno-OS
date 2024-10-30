@@ -25,14 +25,13 @@ pgtbl_t proc_pgtbl_init(uint64 trapframe)
     pgtbl_t pgtbl = pmem_alloc(true);
     vm_mappages(pgtbl, TRAMPOLINE, TRAMPOLINE_BASE_PA, TRAMPOLINE_SIZE, PTE_V | PTE_R);
     vm_mappages(pgtbl, TRAPFRAME, trapframe, PGSIZE, PTE_W | PTE_R);
+    return pgtbl;
 }
 
 // 初始化用户页表
 // pgtbl:给定的用户页表
 void user_pagetable_alloc(pgtbl_t pgtbl)
 {
-    uint64 addr = 0;
-    addr = (uint64)pmem_alloc(false);
     // ustack 映射 + 设置 ustack_pages
     for (int i = 0; i < USER_STACK_INITIAL_PAGE_COUNT; ++i)
     {
@@ -60,7 +59,7 @@ void user_pagetable_alloc(pgtbl_t pgtbl)
     code + data (1 page)
     empty space (1 page) 最低的4096字节 不分配物理页，同时不可访问
 */
-void proc_make_fisrt()
+void proc_make_first()
 {
     uint64 page;
 
