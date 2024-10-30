@@ -70,7 +70,6 @@ void trap_kernel_inithart()
 }
 
 // 外设中断处理 (基于PLIC)
-// 已经可以确认就是一个外部中断？
 void external_interrupt_handler()  
 {  
     int irq = plic_claim(); // 获取中断号 //处理 UART 中断 
