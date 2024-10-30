@@ -2,6 +2,7 @@
 #define __CPU_H__
 
 #include "common.h"
+#include "proc.h"
 
 typedef struct cpu {
     int noff;       // 关中断的深度
