@@ -34,33 +34,34 @@ void trap_user_handler()
     // 确认trap来自U-mode
     assert((sstatus & SSTATUS_SPP) == 0, "trap_user_handler: not from u-mode");
 
-    // 将中断和异常发送到 kerneltrap()
+    // 将中断和异常发送到 kernel_trap()
     w_stvec((uint64)kernel_vector);
 
     // 设置 S Exception Program Counter 为保存的用户 PC
     p->tf->epc = sepc;
 
-    switch(trap_id)
-    {
-        // 系统调用
-        case SMODE_SYSCALL_INTERRUPT:
-        // sepc 指向 ecall 指令，但我们需要返回到下一条指令
+    if (IS_INTR(scause)){
+        switch(trap_id)
+        {
+            case SMODE_SOFTWARE_INTERRUPT:
+                timer_interrupt_handler();
+                break;
+            case SMODE_EXTERNAL_INTERRUPT:
+                external_interrupt_handler();
+                break;  
+            default:
+                printf("Unknown trap id %x,\n\tdescription:%s",trap_id,interrupt_info[trap_id]);
+                break;
+        }
+    }
+
+    else {
+        if(trap_id == 8){
             p->tf->epc += 4;
             intr_on();
             printf("get a syscall from proc %d\n", myproc()->pid);
-            break;
-        case SMODE_SOFTWARE_INTERRUPT:
-            timer_interrupt_handler();
-            break;
-        case SMODE_EXTERNAL_INTERRUPT:
-            external_interrupt_handler();
-            break;
-        default:
-            // 说明发生中断
-            if(scause & 0x8000000000000000L)
-                panic("Unknown trap id %x,\n\tdescription:%s",trap_id,interrupt_info[trap_id]);
-            // 发生异常
-            else printf("Unknown trap id %x,\n\tdescription:%s", trap_id,exception_info[trap_id]);
+        }
+        else printf("Unknown trap id %x,\n\tdescription:%s", trap_id,exception_info[trap_id]);
     }
 
     // 返回用户态
@@ -93,6 +94,6 @@ void trap_user_return()
     uint64 satp = MAKE_SATP(p->pgtbl);
 
     // 跳转到 trampoline.S，切换到用户页表，恢复用户寄存器，并通过 sret 切换到用户模式
-    uint64 fn = TRAMPOLINE + ((uint64)user_return - (uint64)trampoline);
+    uint64 fn = TRAMPOLINE + (user_return - trampoline);
     ((void (*)(uint64, uint64))fn)(TRAPFRAME, satp);
 }
