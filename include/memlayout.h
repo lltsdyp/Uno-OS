@@ -38,11 +38,22 @@
 
 // 定义用户态和内核态切换用到的代码所在的虚拟地址(用户和内核页表都使用)
 #define TRAMPOLINE (VA_MAX - PGSIZE)
+#define TRAMPOLINE_BASE_PA  KERNEL_BASE
+#define TRAMPOLINE_SIZE PGSIZE
 
 // 定义用户态和内核态切换用到的数据所在的虚拟地址(仅用户页表使用)
 #define TRAPFRAME (TRAMPOLINE - PGSIZE)
 
 // 定义各个进程的内核栈的虚拟地址(间隔分布)
 #define KSTACK(id) (TRAPFRAME - ((id) + 1) * 2 * PGSIZE)
+#define KSTACK_BASE_PA(id)  (KERNEL_BASE+(id+1)*PGSIZE)
+#define KSTACK_SIZE PGSIZE
+
+// 用户页表中的用户栈底地址（因为栈是从高地址向低地址增长，所以栈底地址为栈最高位置的地址）
+#define USER_STACK_BOTTOM (TRAPFRAME-1)
+// 定义一开始分配用户栈的页面数
+#define USER_STACK_INITIAL_PAGE_COUNT 1
+// 最低的4096不分配，所以从4096开始分配
+#define USER_VMEM_START PGSIZE
 
 #endif

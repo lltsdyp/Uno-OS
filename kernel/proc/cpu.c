@@ -16,5 +16,5 @@ int mycpuid(void)
 
 proc_t* myproc(void)
 {
-    
+    return mycpu()->proc;
 }

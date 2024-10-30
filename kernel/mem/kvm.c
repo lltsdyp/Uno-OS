@@ -107,6 +107,14 @@ void vm_unmappages(pgtbl_t pgtbl, uint64 va, uint64 len, bool freeit)
     }
 }
 
+
+// 对每个进程，初始化他的内核栈位置。
+void kstack_init()
+{
+    // 当前只有一个进程，所以只要初始化一个即可
+    vm_mappages(kernel_pgtbl, KSTACK(0), KSTACK_BASE_PA(0), KSTACK_SIZE, PTE_R | PTE_W);
+}
+
 // 完成 UART CLINT PLIC 内核代码区 内核数据区 可分配区域 的映射
 // 相当于填充kernel_pgtbl
 void kvm_init()
@@ -131,7 +139,7 @@ void kvm_init()
     vm_mappages(kernel_pgtbl,(uint64)ALLOC_BEGIN,(uint64)ALLOC_BEGIN,
             (uint64)ALLOC_END-(uint64)ALLOC_BEGIN,PTE_R|PTE_W);
 
-    // TODO:新增映射
+    vm_mappages(kernel_pgtbl, TRAMPOLINE, TRAMPOLINE_BASE_PA, TRAMPOLINE_SIZE, PTE_R|PTE_X);
 }
 
 // 使用新的页表，刷新TLB
