@@ -38,7 +38,6 @@
 
 // 定义用户态和内核态切换用到的代码所在的虚拟地址(用户和内核页表都使用)
 #define TRAMPOLINE (VA_MAX - PGSIZE)
-#define TRAMPOLINE_BASE_PA  KERNEL_BASE
 #define TRAMPOLINE_SIZE PGSIZE
 
 // 定义用户态和内核态切换用到的数据所在的虚拟地址(仅用户页表使用)

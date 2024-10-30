@@ -24,7 +24,7 @@ pgtbl_t proc_pgtbl_init(uint64 trapframe)
 {
     pgtbl_t pgtbl = pmem_alloc(true);
     memset(pgtbl, 0, PGSIZE);
-    vm_mappages(pgtbl, TRAMPOLINE, TRAMPOLINE_BASE_PA, TRAMPOLINE_SIZE, PTE_V | PTE_R);
+    vm_mappages(pgtbl, TRAMPOLINE, (uint64)trampoline, TRAMPOLINE_SIZE, PTE_X | PTE_R);
     vm_mappages(pgtbl, TRAPFRAME, trapframe, PGSIZE, PTE_W | PTE_R);
     return pgtbl;
 }
@@ -41,14 +41,14 @@ void user_pagetable_alloc(pgtbl_t pgtbl)
     }
 
     proczero.tf->sp=USER_STACK_BOTTOM;
-    proczero.ctx.sp=KSTACK(0)+PGSIZE;
+    proczero.ctx.sp=KSTACK(proczero.pid)+PGSIZE;
 
     uint64 addr=0;
 
     // data + code 映射
     assert(initcode_len <= PGSIZE, "proc_make_first: initcode too big\n");
 
-    vm_mappages(pgtbl, USER_VMEM_START, addr=(uint64)pmem_alloc(false),
+    vm_mappages(pgtbl, USER_VMEM_START, addr=(uint64)pmem_alloc(true),
                 PGSIZE, PTE_U | PTE_R | PTE_X | PTE_W);
     memmove((void *)addr,initcode,initcode_len);
 }
@@ -68,15 +68,12 @@ void user_pagetable_alloc(pgtbl_t pgtbl)
 */
 void proc_make_first()
 {
-    uint64 page;
-
     // pid 设置
     proczero.pid = 0;
 
     // pagetable 初始化
-    page = (uint64)pmem_alloc(true);
-    proczero.pgtbl = proc_pgtbl_init(page);
-    proczero.tf = (trapframe_t *)pmem_alloc(true);
+    proczero.tf = (trapframe_t *)pmem_alloc(false);
+    proczero.pgtbl = proc_pgtbl_init((uint64)proczero.tf);
 
     // ustack 映射 + 设置 ustack_pages
     user_pagetable_alloc(proczero.pgtbl);
@@ -90,8 +87,10 @@ void proc_make_first()
     proczero.ctx.ra=(uint64)trap_user_return;
 
     // 内核字段设置
-    proczero.kstack = KSTACK(0);
+    proczero.kstack = KSTACK(proczero.pid);
 
     // 上下文切换
+    cpu_t *c = mycpu();
+    c->proc = &proczero;
     swtch(&(mycpu()->ctx), &(proczero.ctx));
 }

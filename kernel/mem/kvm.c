@@ -8,6 +8,7 @@
 #include "memlayout.h"
 
 static pgtbl_t kernel_pgtbl; // 内核页表
+extern char trampoline[];   // trampoline.S
 
 static inline void change_pagetable(pgtbl_t pgtbl)
 {
@@ -139,7 +140,7 @@ void kvm_init()
     vm_mappages(kernel_pgtbl,(uint64)ALLOC_BEGIN,(uint64)ALLOC_BEGIN,
             (uint64)ALLOC_END-(uint64)ALLOC_BEGIN,PTE_R|PTE_W);
 
-    vm_mappages(kernel_pgtbl, TRAMPOLINE, TRAMPOLINE_BASE_PA, TRAMPOLINE_SIZE, PTE_R|PTE_X);
+    vm_mappages(kernel_pgtbl, TRAMPOLINE, (uint64)trampoline, TRAMPOLINE_SIZE, PTE_R|PTE_X);
 
     kstack_init();
 }
