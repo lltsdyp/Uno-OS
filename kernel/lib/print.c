@@ -151,9 +151,9 @@ void panic(const char *fmt, ...)
     vprintf(fmt, ap);
     vprintf("\n",0);
     va_end(ap);
-
     // 设置 panicked 标志位，冻结其他 CPU 的 UART 输出
     panicked = 1;
+
 
     // 进入无限循环，使程序在此处停止运行
     while (1)

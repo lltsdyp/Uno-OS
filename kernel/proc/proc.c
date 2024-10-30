@@ -39,11 +39,17 @@ void user_pagetable_alloc(pgtbl_t pgtbl)
                     (uint64)pmem_alloc(false), PGSIZE, PTE_W | PTE_R | PTE_U);
     }
 
+    proczero.tf->sp=USER_STACK_BOTTOM;
+    proczero.ctx.sp=USER_STACK_BOTTOM;
+
+    uint64 addr=0;
+
     // data + code 映射
     assert(initcode_len <= PGSIZE, "proc_make_first: initcode too big\n");
 
-    vm_mappages(pgtbl, USER_VMEM_START, (uint64)pmem_alloc(false),
+    vm_mappages(pgtbl, USER_VMEM_START, addr=(uint64)pmem_alloc(false),
                 PGSIZE, PTE_U | PTE_R | PTE_X | PTE_W);
+    memmove((void *)addr,initcode,initcode_len);
 }
 
 /*
@@ -73,19 +79,18 @@ void proc_make_first()
     // ustack 映射 + 设置 ustack_pages
     proczero.ustack_pages = USER_STACK_INITIAL_PAGE_COUNT;
 
-    // data + code 映射
-    assert(initcode_len <= PGSIZE, "proc_make_first: initcode too big\n");
-
     // 设置 heap_top
     proczero.heap_top = USER_VMEM_START + PGSIZE;
 
     // tf字段设置
-    proczero.tf = (trapframe_t *)page;
+    proczero.tf = (trapframe_t *)pmem_alloc(false);
+    proczero.tf->epc = (uint64)USER_VMEM_START;
+    proczero.ctx.ra=(uint64)trap_user_return;
 
     // 内核字段设置
     kstack_init();
-    proczero.kstack = KSTACK(0);
+    proczero.kstack = KSTACK(1);
 
     // 上下文切换
-    swtch(&(mycpu()->ctx), &(myproc()->ctx));
+    swtch(&(mycpu()->ctx), &(proczero.ctx));
 }

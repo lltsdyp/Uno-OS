@@ -112,7 +112,7 @@ void vm_unmappages(pgtbl_t pgtbl, uint64 va, uint64 len, bool freeit)
 void kstack_init()
 {
     // 当前只有一个进程，所以只要初始化一个即可
-    vm_mappages(kernel_pgtbl, KSTACK(0), KSTACK_BASE_PA(0), KSTACK_SIZE, PTE_R | PTE_W);
+    vm_mappages(kernel_pgtbl, KSTACK(1), KSTACK_BASE_PA(0), KSTACK_SIZE, PTE_R | PTE_W);
 }
 
 // 完成 UART CLINT PLIC 内核代码区 内核数据区 可分配区域 的映射
