@@ -33,14 +33,14 @@ void pmem_init(void)
     kern_region.allocable = (uint64)KERN_PAGES;
     spinlock_init(&kern_region.lk, "kern_region_lock");
     kern_region.list_head.next = NULL;
-    freeRange(kern_region.begin, kern_region.end, true);
+    free_range(kern_region.begin, kern_region.end, true);
 
     user_region.begin = (uint64)ALLOC_BEGIN + (uint64)KERN_PAGES * PGSIZE;
     user_region.end = (uint64)ALLOC_END;
     user_region.allocable = ((uint64)ALLOC_END - (uint64)ALLOC_BEGIN) / PGSIZE - (uint64)KERN_PAGES;
     spinlock_init(&user_region.lk, "user_region_lock");
     user_region.list_head.next = NULL;
-    freeRange(user_region.begin, user_region.end, false);
+    free_range(user_region.begin, user_region.end, false);
 }
 
 // 从内核或用户区域返回一个未使用的干净的物理页
@@ -102,7 +102,7 @@ void pmem_free(uint64 page, bool in_kernel)
     spinlock_release(&region->lk);
 }
 
-void freeRange(uint64 begin, uint64 end, bool in_kernel)
+void free_range(uint64 begin, uint64 end, bool in_kernel)
 {
     char *p;
     p = (char *)PGROUNDUP((uint64)begin);
