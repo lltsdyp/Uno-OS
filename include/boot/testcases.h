@@ -219,6 +219,41 @@ int main()
     while (1);    
 }
 
+#elif defined LAB_5_CASE_1
+
+int main()
+{
+    int cpuid = r_tp();
+
+    if(cpuid == 0) {
+        
+        print_init();
+        printf("cpu %d is booting!\n", cpuid);
+        pmem_init();
+        kvm_init();
+        kvm_inithart();
+        trap_kernel_init();
+        trap_kernel_inithart();        
+        mmap_init();
+
+        proc_make_first();
+
+        __sync_synchronize();
+        started = 1;
+
+    } else {
+
+        while(started == 0);
+        __sync_synchronize();
+        
+        printf("cpu %d is booting!\n", cpuid);
+        kvm_inithart();
+        trap_kernel_inithart();
+    }
+ 
+    while (1);
+}
+
 #else 
 
 #error "No pre-defined macro. Can not decide what to test or run"

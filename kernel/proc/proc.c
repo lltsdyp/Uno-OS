@@ -68,7 +68,7 @@ void load_initcode(pgtbl_t pgtbl)
     code + data (1 page)
     empty space (1 page) 最低的4096字节 不分配物理页，同时不可访问
 */
-void proc_make_first()
+void proc_make_first()  //TODO:增加mmap支持
 {
     // pid 设置
     proczero.pid = 0;
