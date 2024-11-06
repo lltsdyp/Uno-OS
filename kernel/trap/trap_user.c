@@ -50,7 +50,7 @@ void trap_user_handler()
                 external_interrupt_handler();
                 break;  
             default:
-                printf("Unknown trap id %x,\n\tdescription:%s",trap_id,interrupt_info[trap_id]);
+                panic("trap_user_handler:Unknown trap id %x,\n\tdescription:%s",trap_id,interrupt_info[trap_id]);
                 break;
         }
     }
@@ -65,7 +65,7 @@ void trap_user_handler()
                 syscall();
                 break;
             default:
-                printf("Unknown trap id %x,\n\tdescription:%s", trap_id,exception_info[trap_id]);
+                panic("trap_user_handler:Unknown trap id %x,\n\tdescription:%s", trap_id,exception_info[trap_id]);
                 break;
         }
     }
