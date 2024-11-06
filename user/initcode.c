@@ -1,10 +1,6 @@
 #include "sys.h"
 
-int main()
-{
-    // TODO:更新测试用例
-    syscall(SYS_print);
-    syscall(SYS_print);
-    while(1);
-    return 0;
-}
+#define __INITCODE_C__
+
+#define LAB_5_CASE_1
+#include "boot/testcases.h"

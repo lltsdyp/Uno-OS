@@ -1,6 +1,8 @@
 #ifndef __TESTCASES_H__
 #define __TESTCASES_H__
 
+#ifndef __INITCODE_C__
+
 #include "riscv.h"
 #include "lib/print.h"
 #include "dev/uart.h"
@@ -11,6 +13,12 @@
 #include "trap/trap.h"
 #include "dev/plic.h"
 #include "proc/proc.h"
+
+#else
+
+#include "sys.h"
+
+#endif // initcode.c
 
 volatile static int started = 0;
 
@@ -223,35 +231,27 @@ int main()
 
 int main()
 {
-    int cpuid = r_tp();
+    int L[5];
+    char* s = "hello, world"; 
+    syscall(SYS_copyout, L);
+    syscall(SYS_copyin, L, 5);
+    syscall(SYS_copyinstr, s);
+    while(1);
+    return 0;
+}
 
-    if(cpuid == 0) {
-        
-        print_init();
-        printf("cpu %d is booting!\n", cpuid);
-        pmem_init();
-        kvm_init();
-        kvm_inithart();
-        trap_kernel_init();
-        trap_kernel_inithart();        
-        mmap_init();
+#elif defined LAB_5_CASE_2
 
-        proc_make_first();
+int main()
+{
+    long long heap_top = syscall(SYS_brk, 0);
 
-        __sync_synchronize();
-        started = 1;
+    heap_top = syscall(SYS_brk, heap_top + 4096 * 10);
 
-    } else {
+    heap_top = syscall(SYS_brk, heap_top - 4096 * 5);
 
-        while(started == 0);
-        __sync_synchronize();
-        
-        printf("cpu %d is booting!\n", cpuid);
-        kvm_inithart();
-        trap_kernel_inithart();
-    }
- 
-    while (1);
+    while(1);
+    return 0;
 }
 
 #else 

@@ -6,6 +6,8 @@
 // 页表类型定义
 typedef uint64* pgtbl_t;
 
+typedef struct mmap_region mmap_region_t;
+
 // context 定义
 typedef struct context {
     uint64 ra; // 返回地址

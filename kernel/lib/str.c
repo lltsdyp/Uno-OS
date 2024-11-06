@@ -9,7 +9,7 @@ void memset(void* begin, uint8 data, uint32 n)
 }
 
 // copy
-void memmove(void *dst, const void* src, uint32 n)
+void memcpy(void *dst, const void* src, uint32 n)
 {
     const char *s = src;
     char *d = dst;

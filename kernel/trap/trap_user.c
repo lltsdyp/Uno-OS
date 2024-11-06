@@ -56,12 +56,18 @@ void trap_user_handler()
     }
 
     else {
-        if(trap_id == 8){
-            p->tf->epc += 4;
-            intr_on();
-            printf("get a syscall from proc %d\n", myproc()->pid);
+        switch(trap_id)
+        {
+            case UMODE_SYSCALL_INTERRUPT:
+                p->tf->epc += 4;
+                intr_on();
+                // printf("get a syscall from proc %d\n", myproc()->pid);
+                syscall();
+                break;
+            default:
+                printf("Unknown trap id %x,\n\tdescription:%s", trap_id,exception_info[trap_id]);
+                break;
         }
-        else printf("Unknown trap id %x,\n\tdescription:%s", trap_id,exception_info[trap_id]);
     }
 
     // 返回用户态
@@ -98,4 +104,4 @@ void trap_user_return()
     ((void (*)(uint64, uint64))fn)(TRAPFRAME, satp);
 }
 
-//TODO:与内核对齐
+//TODO:系统调用响应

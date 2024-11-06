@@ -24,7 +24,7 @@ static void copy_range(pgtbl_t old, pgtbl_t new, uint64 begin, uint64 end)
         flags = (int)PTE_FLAGS(*pte);
 
         page = (uint64)pmem_alloc(false);
-        memmove((char*)page, (const char*)pa, PGSIZE);
+        memcpy((char*)page, (const char*)pa, PGSIZE);
         vm_mappages(new, va, page, PGSIZE, flags);
     }
 }
@@ -131,13 +131,68 @@ uint64 uvm_heap_ungrow(pgtbl_t pgtbl, uint64 heap_top, uint32 len)
 // 注意: src dst 不一定是 page-aligned
 void uvm_copyin(pgtbl_t pgtbl, uint64 dst, uint64 src, uint32 len)
 {
+    // 找到src对应页的开头地址
+    uint64 dstbeg=dst;
+    for(uint64 srcbeg=PGROUNDDOWN(src);srcbeg<src+len;srcbeg+=PGSIZE)
+    {
+        pte_t *pte=vm_getpte(pgtbl,srcbeg,0);
+        assert(pte!=NULL&&(*pte&PTE_V),"uvm_copyin: can't find page contains address %p",srcbeg);
+        // 页表项对应的物理地址
+        uint64 paddr=PTE_TO_PA(*pte);
 
+        // 只会出现在第一页上，即，页面开头地址小于需要复制的位置的地址
+        if(srcbeg<=src)
+        {
+            // src&0xfff即src%PGSIZE(0xfff)
+            // 同时，我们需要小心len过小导致复制不到一个页面尾部的情况
+            uint32 n=PGSIZE-(src&0xfff)<len?PGSIZE-(src&0xfff):len;
+            memcpy((void *)dstbeg,(void *)(paddr+(src&0xfff)),n);
+            dstbeg+=n;
+        }
+        // 只会出现在最后一页上，即，该页尾部不是需要复制的内容
+        else if(paddr+PGSIZE>=src+len)
+        {
+            uint32 n=src&0xfff;
+            memcpy((void *)dstbeg,(void *)paddr,n);
+            dstbeg+=n;
+        }
+        else
+        {
+            memcpy((void *)dstbeg,(void *)paddr,PGSIZE);
+            dstbeg+=PGSIZE;
+        }
+    }
 }
 
 // 内核态地址空间[src, src+len） 拷贝至 用户态地址空间[dst, dst+len)
 void uvm_copyout(pgtbl_t pgtbl, uint64 dst, uint64 src, uint32 len)
 {
+    uint64 srcbeg=src;
+    for(uint64 dstbeg=PGROUNDDOWN(dst);dstbeg<dst+len;dstbeg+=PGSIZE)
+    {
+        pte_t *pte=vm_getpte(pgtbl,dstbeg,0);
+        assert(pte!=NULL&&(*pte&PTE_V),"uvm_copyout: can't find page contains address %p",dstbeg);
+        uint64 paddr=PTE_TO_PA(*pte);
 
+        if(dstbeg<=dst)
+        {
+            // 同uvm_copyin
+            uint32 n=PGSIZE-(dst&0xfff)<len?PGSIZE-(dst&0xfff):len;
+            memcpy((void *)(paddr+(dst&0xfff)),(void *)srcbeg,n);
+            srcbeg+=n;
+        }
+        else if(paddr+PGSIZE>=dst+len)
+        {
+            uint32 n=dst&0xfff;
+            memcpy((void *)paddr,(void *)srcbeg,n);
+            srcbeg+=n;
+        }
+        else
+        {
+            memcpy((void *)paddr,(void *)srcbeg,PGSIZE);
+            srcbeg+=PGSIZE;
+        }
+    }
 }
 
 // 用户态字符串拷贝到内核态
@@ -145,5 +200,28 @@ void uvm_copyout(pgtbl_t pgtbl, uint64 dst, uint64 src, uint32 len)
 // 注意: src dst 不一定是 page-aligned
 void uvm_copyin_str(pgtbl_t pgtbl, uint64 dst, uint64 src, uint32 maxlen)
 {
-
+    uint64 dstbeg=dst,offset=src&0xfff,srcbeg=PGROUNDDOWN(src);
+    uint64 paddr=0;
+    for(uint32 count=0;count<maxlen;++count)
+    {
+        // 由于offset每次循环自增1，当offset%PGSIZE==0时，说明遇到了新的页面
+        if(paddr==0 || (offset&0xfff)==0)
+        {
+            pte_t *pte=vm_getpte(pgtbl,srcbeg,0);
+            assert(pte!=NULL&&(*pte&PTE_V),"uvm_copyin_str: can't find page contains address %p",dstbeg);
+            paddr=PTE_TO_PA(*pte);
+            srcbeg+=PGSIZE;//下次直接访问下一页
+        }
+        char c=*(char *)(paddr+offset);
+        if(c!='\0')
+        {
+            *(char *)dstbeg=c;
+            ++offset;
+            ++dstbeg;
+        }
+        else
+        {
+            break;
+        }
+    }
 }

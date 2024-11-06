@@ -12,7 +12,7 @@
 // 成功返回新的堆顶 失败返回-1
 uint64 sys_brk()
 {
-
+    printf("sys_brk:TODO\n");
 }
 
 // 内存映射
@@ -21,7 +21,7 @@ uint64 sys_brk()
 // 成功返回映射空间的起始地址, 失败返回-1
 uint64 sys_mmap()
 {
-
+    printf("sys_mmap:TODO\n");
 }
 
 // 取消内存映射
@@ -30,7 +30,7 @@ uint64 sys_mmap()
 // 成功返回0 失败返回-1
 uint64 sys_munmap()
 {
-
+    printf("sys_munmap:TODO\n");
 }
 
 // copyin 测试 (int 数组)

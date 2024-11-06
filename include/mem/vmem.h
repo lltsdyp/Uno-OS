@@ -36,6 +36,9 @@ typedef uint64 pte_t;
 // 顶级页表
 typedef uint64* pgtbl_t;
 
+typedef struct mmap_region mmap_region_t;
+
+
 // satp寄存器相关
 #define SATP_SV39 (8L << 60)  // MODE = SV39
 #define MAKE_SATP(pagetable) (SATP_SV39 | (((uint64)pagetable) >> 12)) // 设置MODE和PPN字段

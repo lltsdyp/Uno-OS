@@ -52,7 +52,7 @@ void load_initcode(pgtbl_t pgtbl)
 
     vm_mappages(pgtbl, USER_VMEM_START, addr=(uint64)pmem_alloc(false),
                 PGSIZE, PTE_U | PTE_R | PTE_X | PTE_W);
-    memmove((void *)addr,initcode,initcode_len);
+    memcpy((void *)addr,initcode,initcode_len);
 }
 
 /*
