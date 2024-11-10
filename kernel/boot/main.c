@@ -13,6 +13,7 @@
 #include "trap/trap.h"
 #include "dev/plic.h"
 #include "proc/proc.h"
+#include "mem/mmap.h"
 
 volatile static int started = 0;
 

@@ -12,8 +12,47 @@
 // 成功返回新的堆顶 失败返回-1
 uint64 sys_brk()
 {
-    printf("sys_brk:TODO\n");
+    proc_t *p = myproc();
+    uint64 new_heap_top;
+    uint64 size;
+    
+    // 读取新堆顶
+    arg_uint64(0, &new_heap_top);
+
+    // 查询堆顶
+    if(new_heap_top == 0)
+    {
+        printf("look: heap_tops = %p\n", p->heap_top);
+        vm_print(p->pgtbl);
+        printf("\n");
+        return p->heap_top;
+    }
+
+    // 扩展堆
+    else if (new_heap_top > p->heap_top)
+    {
+        size = new_heap_top - p->heap_top;
+        p->heap_top = uvm_heap_grow(p->pgtbl, p->heap_top, size);
+
+        printf("grow: heap_tops = %p\n", p->heap_top);
+        vm_print(p->pgtbl);
+        printf("\n");
+    }
+
+    // 收缩堆
+    else 
+    {
+        size = p->heap_top - new_heap_top;
+        p->heap_top = uvm_heap_ungrow(p->pgtbl, p->heap_top, size);
+
+        printf("ungrow: heap_tops = %p\n", p->heap_top);
+        vm_print(p->pgtbl);
+        printf("\n");
+    }
+
+    return p->heap_top;
 }
+
 
 // 内存映射
 // uint64 start 起始地址 (如果为0则由内核自主选择一个合适的起点, 通常是顺序扫描找到一个够大的空闲空间)

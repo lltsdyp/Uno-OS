@@ -5,6 +5,7 @@
 #include "memlayout.h"
 #include "riscv.h"
 #include "trap/intrno.h"
+#include "syscall/syscall.h"
 
 // in trampoline.S
 extern char trampoline[];  // 内核和用户切换的代码

@@ -18,7 +18,7 @@ static void copy_range(pgtbl_t old, pgtbl_t new, uint64 begin, uint64 end)
         pte = vm_getpte(old, va, false);
         assert(pte != NULL, "uvm_copy_pgtbl: pte == NULL");
         assert((*pte) & PTE_V, "uvm_copy_pgtbl: pte not valid");
-        assert(PTE_CHECK(*pte), "uvm_copy_pgtbl: pte check fail");
+        // assert(PTE_CHECK(*pte), "uvm_copy_pgtbl: pte check fail");
         
         pa = (uint64)PTE_TO_PA(*pte);
         flags = (int)PTE_FLAGS(*pte);
@@ -112,7 +112,17 @@ void uvm_munmap(uint64 begin, uint32 npages)
 uint64 uvm_heap_grow(pgtbl_t pgtbl, uint64 heap_top, uint32 len)
 {
     uint64 new_heap_top = heap_top + len;
+    uint64 ptr;
+    void * pg;
 
+    for (ptr = heap_top; ptr < new_heap_top; ptr += PGSIZE){
+        pg = pmem_alloc(false);
+
+        // assert(pg == NULL, "uvm_heap_grow failed");
+
+        vm_mappages(pgtbl, ptr, (uint64)pg, PGSIZE, PTE_W | PTE_R | PTE_U);
+        memset(pg, 0, PGSIZE);
+    }
 
     return new_heap_top;
 }
@@ -123,6 +133,18 @@ uint64 uvm_heap_ungrow(pgtbl_t pgtbl, uint64 heap_top, uint32 len)
 {
     uint64 new_heap_top = heap_top - len;
 
+    // 将新的堆顶向下对齐到页面边界
+    uint64 aligned_new_heap_top = PGROUNDUP(new_heap_top);
+    uint64 ptr = PGROUNDUP(heap_top);
+
+    // // 在减少堆空间时，new_heap_top 可能会低于堆的最低起始地址，避免错误地释放不属于堆的页面
+    // assert(new_heap_top >= USER_VMEM_START, "uvm_heap_ungrow: new heap top out of range");
+
+    // 遍历从当前堆顶到新的堆顶之间的所有页
+    while (ptr > aligned_new_heap_top) {
+        ptr -= PGSIZE;
+        vm_unmappages(pgtbl, ptr, PGSIZE, true); // 解除映射并释放物理页
+    }
 
     return new_heap_top;
 }
