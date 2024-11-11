@@ -31,7 +31,7 @@ void mmap_init()
         list_mmap_region_node[i].mmap.npages = 0;
 
         // 还要判断是否是最后一个
-        list_mmap_region_node[i].next = (i == N_MMAP) ? NULL : &list_mmap_region_node[i+1];
+        list_mmap_region_node[i].next = (i == (N_MMAP - 1)) ? NULL : &list_mmap_region_node[i + 1];
     }
 }
 
@@ -43,12 +43,12 @@ mmap_region_t* mmap_region_alloc()
     spinlock_acquire(&list_lk);
     mmap_region_node_t* region = list_head->next;
     
-    assert(region == NULL, "mmap_region_alloc failed");
+    assert(region != NULL, "mmap_region_alloc failed");
 
     list_head->next = region->next;
     spinlock_release(&list_lk);
 
-    return &region->mmap;
+    return &(region->mmap);
 }
 
 // 向仓库归还一个 mmap_region_t
