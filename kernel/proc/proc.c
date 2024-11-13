@@ -5,6 +5,7 @@
 #include "proc/cpu.h"
 #include "proc/initcode.h"
 #include "memlayout.h"
+#include "mem/mmap.h"
 
 // in trampoline.S
 extern char trampoline[];
@@ -76,6 +77,14 @@ void proc_make_first()  //TODO:增加mmap支持
     // pagetable 初始化
     proczero.tf = (trapframe_t *)pmem_alloc(false);
     proczero.pgtbl = proc_pgtbl_init((uint64)proczero.tf);
+
+    // 申请mmap区域
+    proczero.mmap=mmap_region_alloc();
+    proczero.mmap->begin=MMAP_BEGIN;
+    proczero.mmap->npages=0;//特殊标记节点，表示开始
+    proczero.mmap->next=mmap_region_alloc();
+    proczero.mmap->next->begin=MMAP_BEGIN;
+    proczero.mmap->next->npages=(MMAP_END-MMAP_BEGIN)/PGSIZE;
 
     // 加载程序
     load_initcode(proczero.pgtbl);

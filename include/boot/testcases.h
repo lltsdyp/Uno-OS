@@ -39,12 +39,12 @@ int main()
         // 调试信息
         // printf("hart %d starting\n", mycpuid());
         // panic("%d %d %d\n", val1, val2, val3);
-        printf("%p\n",0x3fffffe000);
-        started=1;
+        printf("%p\n", 0x3fffffe000);
+        started = 1;
     }
     else
     {
-        //等待cpu0完成所有启动所需的初始化工作
+        // 等待cpu0完成所有启动所需的初始化工作
         while (!started)
             ;
     }
@@ -57,13 +57,14 @@ int main()
 
 volatile static int over_1 = 0, over_2 = 0;
 
-static int* mem[1024];
+static int *mem[1024];
 
 int main()
 {
     int cpuid = r_tp();
 
-    if(cpuid == 0) {
+    if (cpuid == 0)
+    {
 
         print_init();
         pmem_init();
@@ -72,27 +73,32 @@ int main()
         __sync_synchronize();
         started = 1;
 
-        for(int i = 0; i < 512; i++) {
+        for (int i = 0; i < 512; i++)
+        {
             mem[i] = pmem_alloc(true);
             memset(mem[i], 1, PGSIZE);
             printf("mem = %p, data = %d\n", mem[i], mem[i][0]);
         }
         printf("cpu %d alloc over\n", cpuid);
         over_1 = 1;
-        
-        while(over_1 == 0 || over_2 == 0);
-        
-        for(int i = 0; i < 512; i++)
+
+        while (over_1 == 0 || over_2 == 0)
+            ;
+
+        for (int i = 0; i < 512; i++)
             pmem_free((uint64)mem[i], true);
         printf("cpu %d free over\n", cpuid);
+    }
+    else
+    {
 
-    } else {
-
-        while(started == 0);
+        while (started == 0)
+            ;
         __sync_synchronize();
         printf("cpu %d is booting!\n", cpuid);
-        
-        for(int i = 512; i < 1024; i++) {
+
+        for (int i = 512; i < 1024; i++)
+        {
             mem[i] = pmem_alloc(true);
             memset(mem[i], 1, PGSIZE);
             printf("mem = %p, data = %d\n", mem[i], mem[i][0]);
@@ -100,16 +106,16 @@ int main()
         printf("cpu %d alloc over\n", cpuid);
         over_2 = 1;
 
-        while(over_1 == 0 || over_2 == 0);
+        while (over_1 == 0 || over_2 == 0)
+            ;
 
-        for(int i = 512; i < 1024; i++)
+        for (int i = 512; i < 1024; i++)
             pmem_free((uint64)mem[i], true);
-        printf("cpu %d free over\n", cpuid);        
- 
+        printf("cpu %d free over\n", cpuid);
     }
-    while (1);    
+    while (1)
+        ;
 }
-
 
 #elif defined LAB_2_CASE_2
 
@@ -117,7 +123,8 @@ int main()
 {
     int cpuid = r_tp();
 
-    if(cpuid == 0) {
+    if (cpuid == 0)
+    {
 
         print_init();
         pmem_init();
@@ -130,10 +137,10 @@ int main()
 
         pgtbl_t test_pgtbl = pmem_alloc(true);
         uint64 mem[5];
-        for(int i = 0; i < 5; i++)
+        for (int i = 0; i < 5; i++)
             mem[i] = (uint64)pmem_alloc(false);
 
-        printf("\ntest-1\n\n");    
+        printf("\ntest-1\n\n");
         vm_mappages(test_pgtbl, 0, mem[0], PGSIZE, PTE_R);
         vm_mappages(test_pgtbl, PGSIZE * 10, mem[1], PGSIZE / 2, PTE_R | PTE_W);
         vm_mappages(test_pgtbl, PGSIZE * 512, mem[2], PGSIZE - 1, PTE_R | PTE_X);
@@ -141,20 +148,22 @@ int main()
         vm_mappages(test_pgtbl, VA_MAX - PGSIZE, mem[4], PGSIZE, PTE_W);
         vm_print(test_pgtbl);
 
-        printf("\ntest-2\n\n");    
+        printf("\ntest-2\n\n");
         vm_mappages(test_pgtbl, 0, mem[0], PGSIZE, PTE_W);
         vm_unmappages(test_pgtbl, PGSIZE * 10, PGSIZE, true);
         vm_unmappages(test_pgtbl, PGSIZE * 512, PGSIZE, true);
         vm_print(test_pgtbl);
+    }
+    else
+    {
 
-    } else {
-
-        while(started == 0);
+        while (started == 0)
+            ;
         __sync_synchronize();
         printf("cpu %d is booting!\n", cpuid);
-         
     }
-    while (1);    
+    while (1)
+        ;
 }
 
 #elif defined LAB_3_CASE_1
@@ -173,11 +182,11 @@ int main()
         plic_init();
         plic_inithart();
         __sync_synchronize();
-        started=1;
+        started = 1;
     }
     else
     {
-        //等待cpu0完成所有启动所需的初始化工作
+        // 等待cpu0完成所有启动所需的初始化工作
         while (!started)
             ;
         __sync_synchronize();
@@ -196,8 +205,9 @@ int main()
 {
     int cpuid = r_tp();
 
-    if(cpuid == 0) {
-        
+    if (cpuid == 0)
+    {
+
         print_init();
         printf("cpu %d is booting!\n", cpuid);
 
@@ -210,13 +220,15 @@ int main()
         plic_inithart();
 
         proc_make_first();
-        
+
         __sync_synchronize();
         // started = 1;
+    }
+    else
+    {
 
-    } else {
-
-        while(started == 0);
+        while (started == 0)
+            ;
         __sync_synchronize();
         printf("cpu %d is booting!\n", cpuid);
         kvm_inithart();
@@ -224,7 +236,8 @@ int main()
         plic_inithart();
     }
     printf("Ready\n");
-    while (1);    
+    while (1)
+        ;
 }
 
 #elif defined LAB_5_CASE_1
@@ -232,11 +245,12 @@ int main()
 int main()
 {
     int L[5];
-    char* s = "hello, world"; 
+    char *s = "hello, world";
     syscall(SYS_copyout, L);
     syscall(SYS_copyin, L, 5);
     syscall(SYS_copyinstr, s);
-    while(1);
+    while (1)
+        ;
     return 0;
 }
 
@@ -250,13 +264,53 @@ int main()
 
     heap_top = syscall(SYS_brk, heap_top - 4096 * 5);
 
-    while(1);
+    while (1)
+        ;
     return 0;
 }
 
 #elif defined LAB_5_CASE_3
 
-#else 
+#error "Special case, please uncomment the code in main.c rather than define macro LAB_5_CASE_3"
+
+#elif defined LAB_5_CASE_4
+
+#include "sys.h"
+
+// 与内核保持一致
+#define VA_MAX (1ul << 38)
+#define PGSIZE 4096
+#define MMAP_END (VA_MAX - 34 * PGSIZE)
+#define MMAP_BEGIN (MMAP_END - 8096 * PGSIZE)
+
+int main()
+{
+    // 建议画图理解这些地址和长度的含义
+
+    // sys_mmap 测试
+    syscall(SYS_mmap, MMAP_BEGIN + 4 * PGSIZE, 3 * PGSIZE);
+    syscall(SYS_mmap, MMAP_BEGIN + 10 * PGSIZE, 2 * PGSIZE);
+    syscall(SYS_mmap, MMAP_BEGIN + 2 * PGSIZE, 2 * PGSIZE);
+    syscall(SYS_mmap, MMAP_BEGIN + 12 * PGSIZE, 1 * PGSIZE);
+    syscall(SYS_mmap, MMAP_BEGIN + 7 * PGSIZE, 3 * PGSIZE);
+    syscall(SYS_mmap, MMAP_BEGIN, 2 * PGSIZE);
+    syscall(SYS_mmap, 0, 10 * PGSIZE);
+
+    // sys_munmap 测试
+    syscall(SYS_munmap, MMAP_BEGIN + 10 * PGSIZE, 5 * PGSIZE);
+    syscall(SYS_munmap, MMAP_BEGIN, 10 * PGSIZE);
+    syscall(SYS_munmap, MMAP_BEGIN + 17 * PGSIZE, 2 * PGSIZE);
+    syscall(SYS_munmap, MMAP_BEGIN + 15 * PGSIZE, 2 * PGSIZE);
+    syscall(SYS_munmap, MMAP_BEGIN + 19 * PGSIZE, 2 * PGSIZE);
+    syscall(SYS_munmap, MMAP_BEGIN + 22 * PGSIZE, 1 * PGSIZE);
+    syscall(SYS_munmap, MMAP_BEGIN + 21 * PGSIZE, 1 * PGSIZE);
+
+    while (1)
+        ;
+    return 0;
+}
+
+#else
 
 #error "No pre-defined macro. Can not decide what to test or run"
 

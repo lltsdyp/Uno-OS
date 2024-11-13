@@ -60,7 +60,12 @@ uint64 sys_brk()
 // 成功返回映射空间的起始地址, 失败返回-1
 uint64 sys_mmap()
 {
-    printf("sys_mmap:TODO\n");
+    uint64 begin;
+    uint32 npages;
+    arg_uint64(0, &begin);
+    arg_uint32(1, &npages);
+    uvm_mmap(begin, npages/PGSIZE, PTE_U|PTE_R|PTE_W);
+    return begin;
 }
 
 // 取消内存映射
@@ -69,7 +74,12 @@ uint64 sys_mmap()
 // 成功返回0 失败返回-1
 uint64 sys_munmap()
 {
-    printf("sys_munmap:TODO\n");
+    uint64 begin;
+    uint32 npages;
+    arg_uint64(0, &begin);
+    arg_uint32(1, &npages);
+    uvm_munmap(begin, npages/PGSIZE);
+    return 0;
 }
 
 // copyin 测试 (int 数组)
