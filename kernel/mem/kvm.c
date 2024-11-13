@@ -42,7 +42,7 @@ pte_t *vm_getpte(pgtbl_t pgtbl, uint64 va, bool alloc)
         else // 否则
         {
             // 不需要分配或物理内存不足则返回NULL
-            if(!alloc || (current_pgtbl=(pgtbl_t)pmem_alloc(true))==NULL)
+            if(!alloc || (current_pgtbl=(pgtbl_t)pmem_alloc(pgtbl==kernel_pgtbl))==NULL)
             {
                 return ((pgtbl_t)NULL);
             }
@@ -113,7 +113,7 @@ void vm_unmappages(pgtbl_t pgtbl, uint64 va, uint64 len, bool freeit)
 void kstack_init()
 {
     // 当前只有一个进程，所以只要初始化一个即可
-    vm_mappages(kernel_pgtbl, KSTACK(0), (uint64)pmem_alloc(true), KSTACK_SIZE, PTE_R | PTE_W);
+    vm_mappages(kernel_pgtbl, KSTACK(0), (uint64)pmem_alloc(false), KSTACK_SIZE, PTE_R | PTE_W);
 }
 
 // 完成 UART CLINT PLIC 内核代码区 内核数据区 可分配区域 的映射

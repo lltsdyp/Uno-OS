@@ -32,7 +32,7 @@ pgtbl_t proc_pgtbl_init(uint64 trapframe)
     for (int i = 0; i < USER_STACK_INITIAL_PAGE_COUNT; ++i)
     {
         vm_mappages(pgtbl, PGROUNDDOWN(USER_STACK_BOTTOM - (i+1) * PGSIZE),
-                    (uint64)pmem_alloc(true), PGSIZE, PTE_W | PTE_R | PTE_U);
+                    (uint64)pmem_alloc(false), PGSIZE, PTE_W | PTE_R | PTE_U);
     }
 
     proczero.tf->sp=USER_STACK_BOTTOM;
@@ -51,6 +51,7 @@ void load_initcode(pgtbl_t pgtbl)
     // data + code 映射
     assert(initcode_len <= PGSIZE, "proc_make_first: initcode too big\n");
 
+    // pgtbl不可能是kernel_pgtbl
     vm_mappages(pgtbl, USER_VMEM_START, addr=(uint64)pmem_alloc(false),
                 PGSIZE, PTE_U | PTE_R | PTE_X | PTE_W);
     memcpy((void *)addr,initcode,initcode_len);

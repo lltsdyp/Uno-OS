@@ -23,7 +23,7 @@ static void copy_range(pgtbl_t old, pgtbl_t new, uint64 begin, uint64 end)
         pa = (uint64)PTE_TO_PA(*pte);
         flags = (int)PTE_FLAGS(*pte);
 
-        page = (uint64)pmem_alloc(false);
+        page = (uint64)pmem_alloc(false); // 传入的不可能是kernel_pgtbl吧 lol
         memcpy((char *)page, (const char *)pa, PGSIZE);
         vm_mappages(new, va, page, PGSIZE, flags);
     }
@@ -179,7 +179,7 @@ void uvm_mmap(uint64 begin, uint32 npages, int perm)
             // 修改页表 (物理页申请 + 页表映射)
             for (int i = 0; i < npages; ++i)
             {
-                vm_mappages(myproc()->pgtbl, begin + i * PGSIZE, (uint64)pmem_alloc(true),
+                vm_mappages(myproc()->pgtbl, begin + i * PGSIZE, (uint64)pmem_alloc(false),
                             PGSIZE, perm);
             }
 
