@@ -69,18 +69,37 @@ void uvm_show_mmaplist(mmap_region_t *mmap)
 
 // 递归释放 页表占用的物理页 和 页表管理的物理页
 // ps: 顶级页表level = 3, level = 0 说明是页表管理的物理页
-void uvm_destroy_pgtbl(pgtbl_t pgtbl, uint32 level)
+void uvm_destroy_pgtbl(pgtbl_t pgtbl,uint32 level)
 {
+    if(level==0)
+    {
+        pmem_free((uint64)pgtbl,false);
+    }
+    for(uint32 i=0;i<PGSIZE/sizeof(pte_t);++i)
+    {
+        pte_t *pte=(pte_t *)pgtbl[i];
+        uvm_destroy_pgtbl((pgtbl_t)PTE_TO_PA(*pte),level-1);
+    }
+    pmem_free((uint64)pgtbl,true);
 }
 
 // 拷贝页表 (拷贝并不包括trapframe 和 trampoline)
 void uvm_copy_pgtbl(pgtbl_t old, pgtbl_t new, uint64 heap_top, uint32 ustack_pages, mmap_region_t *mmap)
 {
     /* step-1: USER_BASE ~ heap_top */
+    copy_range(old, new, USER_VMEM_START, heap_top);
 
     /* step-2: ustack */
+    copy_range(old, new, USER_STACK_BOTTOM-USER_STACK_INITIAL_PAGE_COUNT*PGSIZE, USER_STACK_BOTTOM);
 
     /* step-3: mmap_region */
+    // 我们需要遍历mmap链，找到所有被分配掉的页面
+    for(mmap_region_t *region=myproc()->mmap;region!=NULL;region=region->next)
+    {
+        uint64 begin=region->begin+region->npages*PGSIZE;
+        uint64 end=region->next==NULL?MMAP_END:region->next->begin;
+        copy_range(old,new,begin,end);
+    }
 }
 
 // 在用户页表和进程mmap链里 新增mmap区域 [begin, begin + npages * PGSIZE)
@@ -160,7 +179,7 @@ void uvm_mmap(uint64 begin, uint32 npages, int perm)
             // 修改页表 (物理页申请 + 页表映射)
             for (int i = 0; i < npages; ++i)
             {
-                vm_mappages(myproc()->pgtbl, begin + i * PGSIZE, (uint64)pmem_alloc(false),
+                vm_mappages(myproc()->pgtbl, begin + i * PGSIZE, (uint64)pmem_alloc(true),
                             PGSIZE, perm);
             }
 
@@ -210,9 +229,6 @@ void uvm_munmap(uint64 begin, uint32 npages)
         // 可以插入的条件是，在链表中，可以找到两个相邻的region，而新的region刚刚好在这两个region之间
         if(begin>=prev_end&&end<=next_region->begin)
         {
-            // prev_region->next = new_region;
-            // new_region->next = next_region;
-
             // 前一个块与后一个相邻，且前一个块并不是用于标识链表头的特殊块，则可以尝试合并
             if(begin==prev_end&&prev_region->npages!=0)
             {
@@ -222,9 +238,6 @@ void uvm_munmap(uint64 begin, uint32 npages)
                 {
                     prev_region->next=next_region->next;
                     mmap_merge(prev_region,next_region,true);
-                }
-                else{
-                    assert(prev_region->next==next_region,"!!!");
                 }
             }
             // 前一个区域不与new_region相邻但是后一个相邻
@@ -249,9 +262,9 @@ void uvm_munmap(uint64 begin, uint32 npages)
     }
 
     // 页表释放
-    printf("vm_munmap");
     vm_unmappages(myproc()->pgtbl, begin, npages*PGSIZE, true);
     //FOR DEBUG
+    printf("vm_munmap");
     uvm_show_mmaplist(myproc()->mmap);
     // vm_print(myproc()->pgtbl);
     printf("\n");

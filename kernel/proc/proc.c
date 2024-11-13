@@ -32,7 +32,7 @@ pgtbl_t proc_pgtbl_init(uint64 trapframe)
     for (int i = 0; i < USER_STACK_INITIAL_PAGE_COUNT; ++i)
     {
         vm_mappages(pgtbl, PGROUNDDOWN(USER_STACK_BOTTOM - (i+1) * PGSIZE),
-                    (uint64)pmem_alloc(false), PGSIZE, PTE_W | PTE_R | PTE_U);
+                    (uint64)pmem_alloc(true), PGSIZE, PTE_W | PTE_R | PTE_U);
     }
 
     proczero.tf->sp=USER_STACK_BOTTOM;

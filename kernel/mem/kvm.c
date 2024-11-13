@@ -42,7 +42,7 @@ pte_t *vm_getpte(pgtbl_t pgtbl, uint64 va, bool alloc)
         else // 否则
         {
             // 不需要分配或物理内存不足则返回NULL
-            if(!alloc || (current_pgtbl=(pgtbl_t)pmem_alloc(false))==NULL)
+            if(!alloc || (current_pgtbl=(pgtbl_t)pmem_alloc(true))==NULL)
             {
                 return ((pgtbl_t)NULL);
             }
