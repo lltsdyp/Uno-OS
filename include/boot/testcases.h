@@ -295,6 +295,7 @@ int main()
     syscall(SYS_mmap, MMAP_BEGIN + 7 * PGSIZE, 3 * PGSIZE);
     syscall(SYS_mmap, MMAP_BEGIN, 2 * PGSIZE);
     syscall(SYS_mmap, 0, 10 * PGSIZE);
+    syscall(SYS_mmap,MMAP_END-3*PGSIZE,3*PGSIZE);
 
     // sys_munmap 测试
     syscall(SYS_munmap, MMAP_BEGIN + 10 * PGSIZE, 5 * PGSIZE);
@@ -303,6 +304,9 @@ int main()
     syscall(SYS_munmap, MMAP_BEGIN + 15 * PGSIZE, 2 * PGSIZE);
     syscall(SYS_munmap, MMAP_BEGIN + 19 * PGSIZE, 2 * PGSIZE);
     syscall(SYS_munmap, MMAP_BEGIN + 22 * PGSIZE, 1 * PGSIZE);
+    syscall(SYS_munmap,MMAP_END-PGSIZE,PGSIZE);
+    syscall(SYS_munmap,MMAP_END-3*PGSIZE,PGSIZE);
+    syscall(SYS_munmap,MMAP_END-2*PGSIZE,PGSIZE);
     syscall(SYS_munmap, MMAP_BEGIN + 21 * PGSIZE, 1 * PGSIZE);
 
     while (1)

@@ -184,6 +184,7 @@ void uvm_mmap(uint64 begin, uint32 npages, int perm)
             }
 
             //FOR DEBUG
+            printf("mmap:\n");
             uvm_show_mmaplist(myproc()->mmap);
             // vm_print(myproc()->pgtbl);
             printf("\n");
@@ -244,6 +245,11 @@ void uvm_munmap(uint64 begin, uint32 npages)
             else if(end==next_region->begin)
             {
                 mmap_merge(new_region,next_region,false);
+            }
+            else //均不相邻，将其插入即可
+            {
+                prev_region->next=new_region;
+                new_region->next = next_region;
             }
             break;
         }
