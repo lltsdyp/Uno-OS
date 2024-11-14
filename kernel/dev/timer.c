@@ -62,9 +62,6 @@ void timer_update()
 // 返回系统时钟ticks
 uint64 timer_get_ticks()
 {
-    // 是否需要加锁？
-    spinlock_acquire(&sys_timer.lk);
     uint64 current_tick= sys_timer.ticks;
-    spinlock_release(&sys_timer.lk);
     return current_tick;
 }

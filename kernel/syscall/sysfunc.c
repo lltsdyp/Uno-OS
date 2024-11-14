@@ -7,6 +7,13 @@
 #include "syscall/sysfunc.h"
 #include "syscall/syscall.h"
 
+// 打印字符
+// uint64 addr
+uint64 sys_print()
+{
+
+}
+
 // 堆伸缩
 // uint64 new_heap_top 新的堆顶 (如果是0代表查询, 返回旧的堆顶)
 // 成功返回新的堆顶 失败返回-1
@@ -82,52 +89,83 @@ uint64 sys_munmap()
     return 0;
 }
 
-// copyin 测试 (int 数组)
-// uint64 addr
-// uint32 len
-// 返回 0
-uint64 sys_copyin()
+// // copyin 测试 (int 数组)
+// // uint64 addr
+// // uint32 len
+// // 返回 0
+// uint64 sys_copyin()
+// {
+//     proc_t* p = myproc();
+//     uint64 addr;
+//     uint32 len;
+
+//     arg_uint64(0, &addr);
+//     arg_uint32(1, &len);
+
+//     int tmp;
+//     for(int i = 0; i < len; i++) {
+//         uvm_copyin(p->pgtbl, (uint64)&tmp, addr + i * sizeof(int), sizeof(int));
+//         printf("get a number from user: %d\n", tmp);
+//     }
+
+//     return 0;
+// }
+
+// // copyout 测试 (int 数组)
+// // uint64 addr
+// // 返回数组元素数量
+// uint64 sys_copyout()
+// {
+//     int L[5] = {1, 2, 3, 4, 5};
+//     proc_t* p = myproc();
+//     uint64 addr;
+
+//     arg_uint64(0, &addr);
+//     uvm_copyout(p->pgtbl, addr, (uint64)L, sizeof(int) * 5);
+
+//     return 5;
+// }
+
+// // copyinstr测试
+// // uint64 addr
+// // 成功返回0
+// uint64 sys_copyinstr()
+// {
+//     char s[64];
+
+//     arg_str(0, s, 64);
+//     printf("get str from user: %s\n", s);
+
+//     return 0;
+// }
+
+
+// 进程复制
+uint64 sys_fork()
 {
-    proc_t* p = myproc();
-    uint64 addr;
-    uint32 len;
 
-    arg_uint64(0, &addr);
-    arg_uint32(1, &len);
-
-    int tmp;
-    for(int i = 0; i < len; i++) {
-        uvm_copyin(p->pgtbl, (uint64)&tmp, addr + i * sizeof(int), sizeof(int));
-        printf("get a number from user: %d\n", tmp);
-    }
-
-    return 0;
 }
 
-// copyout 测试 (int 数组)
-// uint64 addr
-// 返回数组元素数量
-uint64 sys_copyout()
+// 进程等待
+// uint64 addr  子进程退出时的exit_state需要放到这里 
+uint64 sys_wait()
 {
-    int L[5] = {1, 2, 3, 4, 5};
-    proc_t* p = myproc();
-    uint64 addr;
 
-    arg_uint64(0, &addr);
-    uvm_copyout(p->pgtbl, addr, (uint64)L, sizeof(int) * 5);
-
-    return 5;
 }
 
-// copyinstr测试
-// uint64 addr
-// 成功返回0
-uint64 sys_copyinstr()
+// 进程退出
+// int exit_state
+uint64 sys_exit()
 {
-    char s[64];
 
-    arg_str(0, s, 64);
-    printf("get str from user: %s\n", s);
+}
 
-    return 0;
+extern timer_t sys_timer;
+
+// 进程睡眠一段时间
+// uint32 second 睡眠时间
+// 成功返回0, 失败返回-1
+uint64 sys_sleep()
+{
+
 }

@@ -15,6 +15,8 @@
 #include "proc/proc.h"
 #include "mem/mmap.h"
 
+// TODO:支持多进程
+
 volatile static int started = 0;
 
 extern int main();

@@ -70,8 +70,18 @@ typedef struct trapframe {
 } trapframe_t;
 
 // 进程定义
-typedef struct proc {
+typedef struct proc {    
+    spinlock_t lk;           // 自旋锁
+
+    // 锁区域开始
+
     int pid;                 // 标识符
+    enum proc_state state;   // 进程状态
+    struct proc* parent;     // 父进程
+    int exit_state;          // 进程退出时的状态(父进程可能关心)
+    void* sleep_space;       // 睡眠是为在等待什么
+
+    // 锁区域结束
 
     pgtbl_t pgtbl;           // 用户态页表
     uint64 heap_top;         // 用户堆顶(以字节为单位)
@@ -83,8 +93,18 @@ typedef struct proc {
     context_t ctx;           // 内核态进程上下文
 } proc_t;
 
-
+void     proc_init();                                  // 进程模块初始化
 void     proc_make_first();                      // 创建第一个进程并切换到它执行
 pgtbl_t  proc_pgtbl_init(uint64 trapframe);      // 进程页表的初始化和基本映射
+proc_t*  proc_alloc();                                 // 进程申请
+void     proc_free(proc_t* p);                         // 进程释放
+int      proc_fork();                                  // 复制子进程
+int      proc_wait(uint64 addr);                       // 等待子进程退出
+void     proc_exit(int exit_state);                    // 进程退出
+void     proc_yield();                                 // 进程放弃CPU
+void     proc_sleep(void* sleep_space, spinlock_t* lk);// 进程睡眠
+void     proc_wakeup(void* sleep_space);               // 进程唤醒
+void     proc_sched();                                 // 进程切换到调度器
+void     proc_scheduler();                             // 调度器
 
 #endif
