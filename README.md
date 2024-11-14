@@ -3,7 +3,53 @@
 ## 简介
 Uno-OS是一个基于MIT的xv6实验开发的，RISCV架构的简化版UNIX操作系统。
 
-### 用户堆空间伸缩
+## 系统调用的过程
+我们的系统实现系统调用的过程大致如下：
+首先，`sys.h`中提供了用来为系统调用提供支持的宏，用宏的方式实现了一种类似“重载”定义了syscall函数的效果。
+用户需要提供他想要调用的系统调用号以及传递的参数，这个系统调用号定义在`/include/syscall/sysnum.h`中。
+
+`syscall`会将传递的参数以及系统调用号，按照RISCV中的约定，存储在`a0~a5`中（参数）以及`a7`中（系统调用号），并触发软中断，跳转到`user_vector`，随后的处理过程和典型的中断处理一致，我们在`trap_user_handler`中添加一个处理系统调用的分支，将系统调用交给`syscall()`函数处理
+
+``` c
+    // ...
+    else {
+        switch(trap_id)
+        {
+            case UMODE_SYSCALL_INTERRUPT:
+                p->tf->epc += 4;
+                intr_on();
+                syscall();
+                break;
+            default:
+                panic("trap_user_handler:Unknown trap id %x,\n\tdescription:%s", trap_id,exception_info[trap_id]);
+                break;
+        }
+    }
+```
+
+syscall从trapframe中（由于进入了内核态，用户保存的参数和系统调用号都被存储在`trapframe`中）获取系统调用号和参数，然后通过系统调用表`syscalls`来获取具体需要调用的函数
+``` c
+static uint64 (*syscalls[])(void) = {
+    [SYS_brk]           sys_brk,
+    [SYS_mmap]          sys_mmap,
+    [SYS_munmap]        sys_munmap,
+    [SYS_copyin]        sys_copyin,
+    [SYS_copyout]       sys_copyout,
+    [SYS_copyinstr]     sys_copyinstr,
+};
+```
+
+这些函数定义在`kernel/syscall/sysfunc.c`中。需要注意，这些函数的参数不是由syscall函数传递的，而是在用户态中传入寄存器，然后保存到了`trapframe`中，这些函数需要通过调用
+``` c
+void arg_uint32(int n, uint32* ip);
+void arg_uint64(int n, uint64* ip);
+void arg_str(int n, char* buf, int maxlen);
+```
+这些函数来实现参数的存取。
+
+调用完成后，syscall会将返回值存储在trapframe的a0中，这样返回值在回到用户态后就会存储到`a0`中。
+
+## 用户堆空间伸缩
 
 在用户堆扩展时，首先计算扩展后的新的堆顶地址，然后通过一个 for 循环为新的堆空间申请物理页。
 
@@ -60,7 +106,7 @@ uint64 uvm_heap_ungrow(pgtbl_t pgtbl, uint64 heap_top, uint32 len)
 }
 ```
 
-### mmap_region_node 仓库管理
+## mmap_region_node 仓库管理
 仓库管理也主要分为初始化、空间申请和空间归还三部分。        
 
 在初始化时，由于仓库维护的是可分配的内存，所以链表的每个节点都指向那块空间的起始地址，然后等要分配空间时，再给那些节点申请相应的空间，并将节点移出仓库即可。
@@ -127,3 +173,38 @@ void mmap_region_free(mmap_region_t* mmap)
     spinlock_release(&list_lk);
 }
 ```
+
+## mmap系列系统调用的实现
+Uno-OS使用mmap来实现零散内存空间的分配，`mmap`和`munmap`两个系统调用实现了对可变内存区域`[MMAP_BEGIN ~ MMAP_END)`的管理（详见`/include/memlayout`）。管理的机制是一个链表，即`mmap_region_t`，每一个`mmap_region_t`实际上是链表的一个节点，他记录了一段连续的可分配可变内存区域。
+
+proc_t中另外定义了一个`mmap`字段，他首先指向一个特殊的，管理可变页面数量为0的`mmap_region_t`（我们称为`dumb node`），这样有助于简化我们后面进行分配的操作。
+
+当用户通过`mmap`系统调用请求一个内存区域时，他需要指定一个开始地址以及请求的页面数，当开始地址为0时，`mmap`会找出最靠前的适合的内存块分配给用户，否则使用指定的地址。`mmap`需要找到一个可以容纳整个请求内存块区域的`mmap_region_t`节点。由于我们保证连续内存区域被同一个`mmap_region_t`管理，如果我们找不到一个这样的区域，那么我们就报错。
+
+具体分配时，有四种情况
+
+- 开始地址和结束地址均不与当前的`mmap_region_t`开始地址和结束地址相同
+- 开始地址相同但结束地址不同
+- 结束地址相同但开始地址不同
+- 两者均相同
+
+情况2，3只需要调整`mmap_region_t`的边界就可以完成分配，情况1需要重新申请一个`mmap_region_t`来管理剩下的内存区域，因为原本连续的一个内存区域被切成了两个。情况4则需要删除当前`mmap_region_t`，因为整个连续的内存区域都被消耗掉。具体的操作方法见`/kernel/mem/uvm.c`
+
+`munmap`会释放此前分配的连续内存区域，这个内存区域首先会形成一个新的`mmap_region_t`，然后，`munmap`会遍历链表，查找一个能够插入的位置，保证该链表按照每个节点管理的开始地址升序排列。然后，检查这个新的`mmap_region_t`是否与相邻节点的开始地址和结束地址相连，如果相连，那么我们合并这两个节点，这样我们就能保证连续内存区域被同一个`mmap_region_t`管理。
+
+同样的，具体释放时也有四种情况
+
+- 均不相邻
+- 只有开头与前驱节点管理的内存区域相邻
+- 只有结尾与后继节点管理的内存区域相邻
+- 开头结尾均相邻
+
+这四种情况的具体处理详见`/kernel/mem/uvm.c`，在此不作赘述。
+
+如果节点应当被插入到链表尾端，那么我们注意只能检查其前驱节点，因为这种情况下检查后继节点将会引发空指针引用异常。
+
+## 页表的复制和释放
+
+`uvm_copy_pgtbl`将一个页表复制到另一个页表，同时将分配的物理页也一并拷贝，这个函数和用于销毁页表的`uvm_destroy_pgtbl`一样，都是在未来实现多进程时的辅助函数。
+
+`uvm_copy_pgtbl`首先将从静态区域开始到堆顶的区域复制到新页表中，然后从最高位地址开始，复制到栈顶，对可变内存区域的分配则需要一些特殊的处理。根据上一节，我们知道，两个节点之间的区域是我们通过`mmap`分配掉的内存区域。由此得出**下一个节点的开始地址-上一个节点的结束地址**是分配掉的地址大小，上一个节点的结束地址是分配掉的内存块的起始地址，这样我们就知道了需要被释放的内存区域，将其释放掉即可

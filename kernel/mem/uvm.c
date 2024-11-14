@@ -219,6 +219,7 @@ void uvm_munmap(uint64 begin, uint32 npages)
     mmap_region_t *new_region = mmap_region_alloc();
     new_region->begin = begin;
     new_region->npages = npages;
+    new_region->next=NULL;
 
     // 尝试合并 mmap_region
     // 首先寻找可能的前后两个mmap_region
@@ -263,7 +264,7 @@ void uvm_munmap(uint64 begin, uint32 npages)
         uint64 prev_end = prev_region->begin + prev_region->npages * PGSIZE;
         if (begin == prev_end)
         {
-            mmap_merge(prev_region, new_region, true);
+            mmap_merge(prev_region, new_region, false);
         }
     }
 

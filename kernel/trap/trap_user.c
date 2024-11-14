@@ -62,7 +62,6 @@ void trap_user_handler()
             case UMODE_SYSCALL_INTERRUPT:
                 p->tf->epc += 4;
                 intr_on();
-                // printf("get a syscall from proc %d\n", myproc()->pid);
                 syscall();
                 break;
             default:
