@@ -90,11 +90,11 @@ void uvm_copy_pgtbl(pgtbl_t old, pgtbl_t new, uint64 heap_top, uint32 ustack_pag
     copy_range(old, new, USER_VMEM_START, heap_top);
 
     /* step-2: ustack */
-    copy_range(old, new, USER_STACK_BOTTOM-USER_STACK_INITIAL_PAGE_COUNT*PGSIZE, USER_STACK_BOTTOM);
+    copy_range(old, new, ustack_pages, USER_STACK_BOTTOM);
 
     /* step-3: mmap_region */
     // 我们需要遍历mmap链，找到所有被分配掉的页面
-    for(mmap_region_t *region=myproc()->mmap;region!=NULL;region=region->next)
+    for(mmap_region_t *region=mmap;region!=NULL;region=region->next)
     {
         uint64 begin=region->begin+region->npages*PGSIZE;
         uint64 end=region->next==NULL?MMAP_END:region->next->begin;
