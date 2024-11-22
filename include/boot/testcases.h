@@ -375,6 +375,19 @@ int main()
     return 0;
 }
 
+#elif defined LAB_6_CASE_2
+
+#include "sys.h"
+
+int main()
+{
+    syscall(SYS_fork);
+    syscall(SYS_fork);
+
+    while(1);
+    return 0;
+}
+
 #else
 
 #error "No pre-defined macro. Can not decide what to test or run"

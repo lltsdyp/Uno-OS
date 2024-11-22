@@ -422,6 +422,7 @@ void proc_scheduler()
             spinlock_acquire(&(p->lk));
             if(p->state==RUNNABLE)
             {
+                printf("proc %d running\n",p->pid);
                 p->state=RUNNING;
                 mycpu()->proc=p;
 

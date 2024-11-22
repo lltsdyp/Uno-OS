@@ -94,7 +94,9 @@ void timer_interrupt_handler()
     // 避免重复更新时钟
     if(mycpuid()==0)
         timer_update();
-    // printf("CPUID:%d di da\n",mycpuid());
+    // 实现公平调度，避免长期独占    
+    if(myproc() != NULL && myproc()->state == RUNNING)
+        proc_yield();
 }
 
 // 在kernel_vector()里面调用
