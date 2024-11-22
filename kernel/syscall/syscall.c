@@ -27,7 +27,7 @@ void syscall()
     struct proc *p=myproc();
     int syscall_num=p->tf->a7;  // a7存储系统调用号
 
-    if(syscall_num > 0 && syscall_num < sizeof(syscalls)/sizeof(syscalls[0]) 
+    if(syscall_num >= 0 && syscall_num < sizeof(syscalls)/sizeof(syscalls[0]) 
         && syscalls[syscall_num])
     {
         p->tf->a0 = syscalls[syscall_num]();

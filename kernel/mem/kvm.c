@@ -7,7 +7,7 @@
 #include "riscv.h"
 #include "memlayout.h"
 
-static pgtbl_t kernel_pgtbl; // 内核页表
+pgtbl_t kernel_pgtbl; // 内核页表
 extern char trampoline[];   // trampoline.S
 
 static inline void change_pagetable(pgtbl_t pgtbl)
@@ -42,7 +42,7 @@ pte_t *vm_getpte(pgtbl_t pgtbl, uint64 va, bool alloc)
         else // 否则
         {
             // 不需要分配或物理内存不足则返回NULL
-            if(!alloc || (current_pgtbl=(pgtbl_t)pmem_alloc(pgtbl==kernel_pgtbl))==NULL)
+            if(!alloc || (current_pgtbl=(pgtbl_t)pmem_alloc(true))==NULL)
             {
                 return ((pgtbl_t)NULL);
             }
@@ -108,14 +108,6 @@ void vm_unmappages(pgtbl_t pgtbl, uint64 va, uint64 len, bool freeit)
     }
 }
 
-
-// 对每个进程，初始化他的内核栈位置。
-void kstack_init()
-{
-    // 当前只有一个进程，所以只要初始化一个即可
-    vm_mappages(kernel_pgtbl, KSTACK(0), (uint64)pmem_alloc(false), KSTACK_SIZE, PTE_R | PTE_W);
-}
-
 // 完成 UART CLINT PLIC 内核代码区 内核数据区 可分配区域 的映射
 // 相当于填充kernel_pgtbl
 void kvm_init()
@@ -141,8 +133,6 @@ void kvm_init()
             (uint64)ALLOC_END-(uint64)ALLOC_BEGIN,PTE_R|PTE_W);
 
     vm_mappages(kernel_pgtbl, TRAMPOLINE, (uint64)trampoline, TRAMPOLINE_SIZE, PTE_R|PTE_X);
-
-    kstack_init();
 }
 
 // 使用新的页表，刷新TLB

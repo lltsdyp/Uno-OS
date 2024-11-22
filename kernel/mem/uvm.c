@@ -74,13 +74,42 @@ void uvm_destroy_pgtbl(pgtbl_t pgtbl,uint32 level)
     if(level==0)
     {
         pmem_free((uint64)pgtbl,false);
+        return;
     }
     for(uint32 i=0;i<PGSIZE/sizeof(pte_t);++i)
     {
-        pte_t *pte=(pte_t *)pgtbl[i];
-        uvm_destroy_pgtbl((pgtbl_t)PTE_TO_PA(*pte),level-1);
+        pte_t *pte=&pgtbl[i];
+        if(*pte&PTE_V)
+            uvm_destroy_pgtbl((pgtbl_t)PTE_TO_PA((uint64)*pte),level-1);
     }
+    
     pmem_free((uint64)pgtbl,true);
+
+    // pte_t pte;
+    // pgtbl_t child;
+    // assert(level<=3,"uvm_destroy_pgtbl: level > 3");
+    // if(level==0)
+    //     goto free;
+    // for (int i = 0; i < PGSIZE / sizeof(pte);i++)
+    // {
+    //     pte = pgtbl[i];
+    //     if(pte & PTE_V)
+    //     {
+    //         if ((level>1)&&(!PTE_CHECK(pte)))
+    //         {
+    //             printf("pte = %p\n", pte);
+    //             panic("uvm_destroy_pgtbl: pte fail");
+    //         }
+    //         child = (pgtbl_t)PTE_TO_PA(pte);
+    //         destroy_pgtbl(child, level - 1);
+    //         pgtbl[i] = 0;
+    //     }
+    // }
+    // free:
+    //     if (level>0)
+    //         pmem_free((uint64)pgtbl, true);
+    //     else
+    //         pmem_free((uint64)pgtbl, false);
 }
 
 // 拷贝页表 (拷贝并不包括trapframe 和 trampoline)
@@ -90,7 +119,7 @@ void uvm_copy_pgtbl(pgtbl_t old, pgtbl_t new, uint64 heap_top, uint32 ustack_pag
     copy_range(old, new, USER_VMEM_START, heap_top);
 
     /* step-2: ustack */
-    copy_range(old, new, ustack_pages, USER_STACK_BOTTOM);
+    copy_range(old, new, USER_STACK_BOTTOM-ustack_pages*PGSIZE, USER_STACK_BOTTOM);
 
     /* step-3: mmap_region */
     // 我们需要遍历mmap链，找到所有被分配掉的页面
@@ -184,8 +213,8 @@ void uvm_mmap(uint64 begin, uint32 npages, int perm)
             }
 
             //FOR DEBUG
-            printf("mmap:\n");
-            uvm_show_mmaplist(myproc()->mmap);
+            // printf("mmap:\n");
+            // uvm_show_mmaplist(myproc()->mmap);
             // vm_print(myproc()->pgtbl);
             printf("\n");
             return;
@@ -271,8 +300,8 @@ void uvm_munmap(uint64 begin, uint32 npages)
     // 页表释放
     vm_unmappages(myproc()->pgtbl, begin, npages*PGSIZE, true);
     //FOR DEBUG
-    printf("vm_munmap");
-    uvm_show_mmaplist(myproc()->mmap);
+    // printf("vm_munmap");
+    // uvm_show_mmaplist(myproc()->mmap);
     // vm_print(myproc()->pgtbl);
     printf("\n");
 }
@@ -417,6 +446,7 @@ void uvm_copyin_str(pgtbl_t pgtbl, uint64 dst, uint64 src, uint32 maxlen)
         }
         else
         {
+            *(char *)dstbeg = c;
             break;
         }
     }

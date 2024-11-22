@@ -94,7 +94,7 @@ void timer_interrupt_handler()
     // 避免重复更新时钟
     if(mycpuid()==0)
         timer_update();
-    printf("CPUID:%d di da\n",mycpuid());
+    // printf("CPUID:%d di da\n",mycpuid());
 }
 
 // 在kernel_vector()里面调用
@@ -113,8 +113,8 @@ void trap_kernel_handler()
     int trap_id = scause & 0xf; 
 
     // 暂未实现对异常的处理
-    assert(IS_INTR(scause),"Unhandled exception,\n\tsepc:%x,scause:%x,sstatus:%x,stval:%x\n\tdescription:%s"
-                ,sepc,scause,sstatus,stval,exception_info[trap_id]);
+    assert(IS_INTR(scause),"Unhandled exception,\n\tsepc:%p,scause:%p,sstatus:%p,stval:%p,trap_id:%d\n\tdescription:%s"
+                ,sepc,scause,sstatus,stval,trap_id,exception_info[trap_id]);
 
     // 中断异常处理核心逻辑
 

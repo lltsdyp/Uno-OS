@@ -5,21 +5,15 @@
 
 #include "riscv.h"
 #include "lib/print.h"
-#include "dev/uart.h"
-#include "proc/cpu.h"
+#include "lib/str.h"
 #include "mem/pmem.h"
 #include "mem/vmem.h"
-#include "lib/str.h"
-#include "trap/trap.h"
-#include "dev/plic.h"
-#include "proc/proc.h"
 #include "mem/mmap.h"
-
-// TODO:支持多进程
+#include "proc/proc.h"
+#include "trap/trap.h"
 
 volatile static int started = 0;
 
-extern int main();
 int main()
 {
     int cpuid = r_tp();
@@ -34,12 +28,11 @@ int main()
         trap_kernel_init();
         trap_kernel_inithart();        
         mmap_init();
-
-        proc_make_first(); // 生成第一个进程，以后修改测试用例在initcode.c中进行
+        proc_init();
+        proc_make_first();
 
         __sync_synchronize();
-        started = 1;
-
+        // started = 1;
     } else {
 
         while(started == 0);
@@ -49,7 +42,8 @@ int main()
         kvm_inithart();
         trap_kernel_inithart();
     }
- 
+    proc_scheduler();
+
     while (1);
 }
 

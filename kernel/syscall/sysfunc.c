@@ -6,12 +6,16 @@
 #include "lib/print.h"
 #include "syscall/sysfunc.h"
 #include "syscall/syscall.h"
+#include "dev/timer.h"
 
 // 打印字符
 // uint64 addr
 uint64 sys_print()
 {
-
+    char str[80*24];
+    arg_str(0, str, 80*24);
+    printf("%s",str);
+    return 0;
 }
 
 // 堆伸缩
@@ -29,9 +33,9 @@ uint64 sys_brk()
     // 查询堆顶
     if(new_heap_top == 0)
     {
-        printf("look: heap_tops = %p\n", p->heap_top);
-        vm_print(p->pgtbl);
-        printf("\n");
+        // printf("look: heap_tops = %p\n", p->heap_top);
+        // vm_print(p->pgtbl);
+        // printf("\n");
         return p->heap_top;
     }
 
@@ -41,9 +45,9 @@ uint64 sys_brk()
         size = new_heap_top - p->heap_top;
         p->heap_top = uvm_heap_grow(p->pgtbl, p->heap_top, size);
 
-        printf("grow: heap_tops = %p\n", p->heap_top);
-        vm_print(p->pgtbl);
-        printf("\n");
+        // printf("grow: heap_tops = %p\n", p->heap_top);
+        // vm_print(p->pgtbl);
+        // printf("\n");
     }
 
     // 收缩堆
@@ -52,9 +56,9 @@ uint64 sys_brk()
         size = p->heap_top - new_heap_top;
         p->heap_top = uvm_heap_ungrow(p->pgtbl, p->heap_top, size);
 
-        printf("ungrow: heap_tops = %p\n", p->heap_top);
-        vm_print(p->pgtbl);
-        printf("\n");
+        // printf("ungrow: heap_tops = %p\n", p->heap_top);
+        // vm_print(p->pgtbl);
+        // printf("\n");
     }
 
     return p->heap_top;
@@ -143,21 +147,29 @@ uint64 sys_munmap()
 // 进程复制
 uint64 sys_fork()
 {
-
+    return proc_fork();
 }
 
 // 进程等待
 // uint64 addr  子进程退出时的exit_state需要放到这里 
 uint64 sys_wait()
 {
+    uint64 exit_addr;
 
+    arg_uint64(0, &exit_addr);
+    assert((void *)exit_addr!=NULL,"wait: exit state is null");
+    return proc_wait(exit_addr);
 }
 
 // 进程退出
 // int exit_state
 uint64 sys_exit()
 {
+    uint32 exit_state;
+    arg_uint32(0,&exit_state);
 
+    proc_exit(exit_state);
+    return (uint64)exit_state;
 }
 
 extern timer_t sys_timer;
@@ -167,5 +179,15 @@ extern timer_t sys_timer;
 // 成功返回0, 失败返回-1
 uint64 sys_sleep()
 {
+    uint32 sleeptime;
+    arg_uint32(0, &sleeptime);
 
+    spinlock_acquire(&(sys_timer.lk));
+    uint64 start_tick=timer_get_ticks();
+    while(timer_get_ticks() - start_tick < sleeptime)
+    {
+        proc_sleep((void *)&(sys_timer.ticks),&(sys_timer.lk));
+    }
+    spinlock_release(&(sys_timer.lk));
+    return 0;
 }

@@ -45,6 +45,7 @@ void pmem_init(void)
 
 // 从内核或用户区域返回一个未使用的干净的物理页
 // 如果不足，触发panic并锁死程序
+// 保证分配的物理页被清空（全部置为0）
 void *pmem_alloc(bool in_kernel)
 {
     alloc_region_t *region = in_kernel ? &kern_region : &user_region;

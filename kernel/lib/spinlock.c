@@ -45,7 +45,7 @@ void spinlock_init(spinlock_t *lk, char *name)
     lk->name=name;
 }
 
-// 获取自选锁
+// 获取自旋锁
 void spinlock_acquire(spinlock_t *lk)
 {
     push_off(); //关中断

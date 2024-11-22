@@ -2,6 +2,7 @@
 #define __PROC_H__
 
 #include "common.h"
+#include "lib/lock.h"
 
 // 页表类型定义
 typedef uint64* pgtbl_t;
@@ -68,6 +69,26 @@ typedef struct trapframe {
     /* 272 */ uint64 t5;
     /* 280 */ uint64 t6;
 } trapframe_t;
+
+/* 
+    进程状态集合
+    可能的进程状态变换：
+    UNSED -> RUNNABLE 进程初始化
+    RUNNABLE -> RUNNIGN 进程获得CPU使用权
+    RUNNING -> RUNNABLE 进程失去CPU使用权
+    RUNNING -> SLEEPING 进程睡眠
+    SLEEPING -> RUNNABLE 进程苏醒
+    RUNNING -> ZOMBIE 进程杀死自己
+    RUNNABLE -> ZOMBIE 进程被杀死
+    ZOMBIE -> UNUSED 进程被父进程释放回收
+*/
+enum proc_state {
+    UNUSED,       // 未被使用
+    RUNNABLE,     // 准备就绪
+    RUNNING,      // 运行中
+    SLEEPING,     // 睡眠等待
+    ZOMBIE,       // 濒临死亡
+};
 
 // 进程定义
 typedef struct proc {    
