@@ -17,6 +17,7 @@ typedef struct sleeplock {
 } sleeplock_t;
 
 #define SPINLOCK_INVALID_CPUID (-1)
+#define SLEEPLOCK_INVALID_PID (-1)
 
 void push_off();
 void pop_off();
