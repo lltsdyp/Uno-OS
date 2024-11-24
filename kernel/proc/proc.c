@@ -163,9 +163,6 @@ proc_t* proc_alloc()
     newproc->ustack_pages=USER_STACK_INITIAL_PAGE_COUNT;
     newproc->pgtbl=proc_pgtbl_init((uint64)newproc->tf);
 
-    // kstack初始化
-    newproc->kstack=KSTACK(pid);
-    vm_mappages(kernel_pgtbl,newproc->kstack,(uint64)pmem_alloc(true),PGSIZE,PTE_R|PTE_W);
 
     // 准备上下文切换
     memset(&(newproc->ctx),0,sizeof(newproc->ctx));
@@ -216,7 +213,6 @@ void proc_free(proc_t* p)
     p->ustack_pages=0;
     p->tf=NULL;
     p->mmap=NULL;
-    p->kstack=0;
 
     memset((void *)&(p->ctx),0,sizeof(context_t));
 }
@@ -229,6 +225,9 @@ void proc_init()
     {
         spinlock_init(&procs[i].lk, "proc");
         proc_free(&procs[i]);
+        // kstack初始化
+        procs[i].kstack=KSTACK(i);
+        vm_mappages(kernel_pgtbl,procs[i].kstack,(uint64)pmem_alloc(true),PGSIZE,PTE_R|PTE_W);
     }
 }
 
@@ -266,7 +265,6 @@ int proc_fork()
     // 设置pcb中的其他字段
     new_proc->heap_top=myproc()->heap_top;
     new_proc->ustack_pages=myproc()->ustack_pages;
-    new_proc->kstack=KSTACK(new_proc->pid);
 
     // 进程状态设置
     new_proc->state=RUNNABLE;

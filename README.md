@@ -3,208 +3,145 @@
 ## 简介
 Uno-OS是一个基于MIT的xv6实验开发的，RISCV架构的简化版UNIX操作系统。
 
-## 系统调用的过程
-我们的系统实现系统调用的过程大致如下：
-首先，`sys.h`中提供了用来为系统调用提供支持的宏，用宏的方式实现了一种类似“重载”定义了syscall函数的效果。
-用户需要提供他想要调用的系统调用号以及传递的参数，这个系统调用号定义在`/include/syscall/sysnum.h`中。
+## 进程的创建和销毁
 
-`syscall`会将传递的参数以及系统调用号，按照RISCV中的约定，存储在`a0~a5`中（参数）以及`a7`中（系统调用号），并触发软中断，跳转到`user_vector`，随后的处理过程和典型的中断处理一致，我们在`trap_user_handler`中添加一个处理系统调用的分支，将系统调用交给`syscall()`函数处理
+### PCB的初始化
+
+Uno-OS的进程PCB块全部由一个全局的PCB数组来管理，在`proc_init`中该数组被初始化，主要内容为初始化进程锁。
+
+### 进程创建
+
+参考xv6以及POSIX规范，在系统启动时，会首先创建一个`proczero`进程，这个进程即所谓的”根进程“。其他的进程要想被创建，必须通过`fork`函数复制这个进程（或其他的进程），即，进程不能凭空出现。而这样复制出来的进程又自然地和先前的进程形成了父子关系，如此一来，所有的进程便构成了一种树的关系（即，进程树）。下图是使用linux的`pstree`命令显示的进程树的一部分：
+![pstree](./images/process-tree.png)
+
+在Uno-OS中fork系统调用由`proc_fork`函数完成。一般地，fork函数具有“调用一次，返回两次”的特点，在父进程中，fork会返回子进程的pid，这一点我们可以通过系统调用的返回值来完成，即，`proc_fork`函数会返回子进程`pid`，这是由于在调用`proc_fork`的过程中，父进程仍然处于`RUNNING`状态。而新创建的子进程则是处于`RUNNABLE`状态等待被调度。我们又知道当一个进程处于`RUNNABLE`状态时，其在用户态的状态会被保存在`proc->tf`中，因此我们将父进程的`tf`全部复制过来，但是设置`a0`字段为0，这样一来，我们就可以让fork系统调用在返回时，子进程返回值为0而父进程返回值为`pid`，且其他状态均相同。
+
+以下为proc_fork函数的代码，我省略了一部分复制的内容只保留了关键部分，完整的代码参见[`proc.c`](./kernel/proc/proc.c#237)
+``` c
+int proc_fork()
+{
+    proc_t* new_proc=proc_alloc();
+    assert(new_proc!=NULL, "proc_fork: no proc available");
+
+    // 设置子进程进入用户态后的状态
+    // 子进程中调用fork的返回值储存在a0中，为0
+    *(new_proc->tf)=*(myproc()->tf);
+    new_proc->tf->a0=0; // 子进程的返回值为0
+
+    // ......
+
+    // 进程状态设置
+    new_proc->state=RUNNABLE;   // 设置进程可调度
+    new_proc->parent=myproc();  // 设置父子关系，以构成进程树
+
+    spinlock_release(&(new_proc->lk)); // proc_alloc返回的进程是持有锁的，这样避免其被调度
+
+    return new_proc->pid;   // 父进程的返回值为子进程的pid
+}
+```
+
+`proc_alloc`会为进程进行一些必要的资源分配，如页表映射等。
+
+### 进程销毁
+
+`proc_free`函数负责将不再被使用的进程销毁，他会释放掉进程由`proc_free`分配掉从而占用的资源。
+
+## 调度算法的实现
+
+参考xv6，我们打算实现一个时间片为1个时钟中断的RR调度算法（之后可以改进）。
+
+进程调度实现的核心代码为`proc_scheduler`函数，但是完整的进程调度以及进程切换还涉及到其他的函数，如，进入调度器前调用的`proc_sched`函数（用于确认持有锁的状态以及保存关中断层数），用于切换上下文的`swtch`函数,以及调度返回时的`fork_return`函数（主要实现了进程锁的释放）
+
+### `swtch`函数
+
+`swtch`主要用于在内核态切换上下文，需要注意的是，`proc_alloc`中我们将新进程ctx的ra字段设置为`fork_return`，该函数会做一些新进程在能够被调度前的准备工作，如，它会释放掉`proc_alloc`中持有的锁。
+
+### `proc_sched`函数
+
+`proc_sched`函数开头用四个`assert`语句检查了一系列条件，然后保存了关中断层数的信息
 
 ``` c
-    // ...
-    else {
-        switch(trap_id)
+void proc_sched()
+{
+    assert(spinlock_holding(&(myproc()->lk)), "proc_sched: Not holding lock");
+    assert(mycpu()->noff==1, "proc_sched: mycpu()->noff!=1");
+    assert(myproc()->state!=RUNNING, "proc_sched: proc is running");
+    assert(intr_get()==0,"proc_sched: interruptible");
+
+    // 切换上下文，
+    int origin=mycpu()->origin;
+    swtch(&(myproc()->ctx),&(mycpu()->ctx));
+    mycpu()->origin=origin;
+}
+```
+
+第一句assert确定了使用`proc_sched`准备进入调度器时，函数持有锁；然后确保当前关中断层数为1，即，关中断的层数是由于持有当前的进程锁造成的；第三步，确认当前进程状态不为`RUNNING`，在调度器中我们要求当前没有处于`RUNNING`状态的进程，否则一个cpu上会出现多个`RUNNING`状态的进程，而将当前的进程状态由`RUNNING`状态改变的操作不能由调度器完成，因为它并不知道当前进程需要进入哪个状态，因此这一更改操作必须由`proc_sched`的调用者保证；最后，确保当前中断已经被关闭，避免意外情况出现。
+
+然后系统会保存先前的中断开关状态，通过`swtch`函数保存并切换上下文，由于先前保存在cpu的ctx字段中的上下文信息是`proc_scheduler`函数中上一次完成调度的位置，或者简单地说，`proc_scheduler`函数中[调用`swtch`的位置](./kernel/proc/proc.c#428)。然后交由`proc_scheduler`进行调度。
+
+`proc_scheduler`的调度流程如下：
+``` c
+void proc_scheduler()
+{
+    mycpu()->proc=NULL;//当前没有正在执行的进程
+    int found=0;
+    proc_t* p=NULL;
+    while(1)
+    {
+        // 开中断以避免死锁的发生
+        intr_on();
+
+        found=0;
+        for(int idx=0;idx<NPROC;++idx)
         {
-            case UMODE_SYSCALL_INTERRUPT:
-                p->tf->epc += 4;
-                intr_on();
-                syscall();
-                break;
-            default:
-                panic("trap_user_handler:Unknown trap id %x,\n\tdescription:%s", trap_id,exception_info[trap_id]);
-                break;
+            p=&procs[idx];
+            spinlock_acquire(&(p->lk));
+            if(p->state==RUNNABLE)
+            {
+                printf("proc %d running\n",p->pid);
+                p->state=RUNNING;
+                mycpu()->proc=p;
+
+                // 切换到p执行
+                swtch(&(mycpu()->ctx),&(p->ctx));
+
+                //发生进程调度前首先将cpu的当前proc清空
+                mycpu()->proc=NULL;
+
+                found=1;
+            }
+            spinlock_release(&(p->lk));
         }
     }
-```
-
-syscall从trapframe中（由于进入了内核态，用户保存的参数和系统调用号都被存储在`trapframe`中）获取系统调用号和参数，然后通过系统调用表`syscalls`来获取具体需要调用的函数
-``` c
-static uint64 (*syscalls[])(void) = {
-    [SYS_brk]           sys_brk,
-    [SYS_mmap]          sys_mmap,
-    [SYS_munmap]        sys_munmap,
-    [SYS_copyin]        sys_copyin,
-    [SYS_copyout]       sys_copyout,
-    [SYS_copyinstr]     sys_copyinstr,
-};
-```
-
-这些函数定义在`kernel/syscall/sysfunc.c`中。需要注意，这些函数的参数不是由syscall函数传递的，而是在用户态中传入寄存器，然后保存到了`trapframe`中，这些函数需要通过调用
-``` c
-void arg_uint32(int n, uint32* ip);
-void arg_uint64(int n, uint64* ip);
-void arg_str(int n, char* buf, int maxlen);
-```
-这些函数来实现参数的存取。
-
-调用完成后，syscall会将返回值存储在trapframe的a0中，这样返回值在回到用户态后就会存储到`a0`中。
-
-## 用户堆空间伸缩
-
-在用户堆扩展时，首先计算扩展后的新的堆顶地址，然后通过一个 for 循环为新的堆空间申请物理页。
-
-`vm_mappages` 函数的主要功能是建立虚拟地址 va 到物理地址 pa 的映射，映射范围为 `[va, va + len)`。该函数的五个参数从左到右分别是进程页表、起始虚拟地址、起始物理地址、映射的长度以及映射的权限位（如可读、可写等）。
-
-在映射物理页面后，还需要对申请到的物理页进行初始化。
-
-在用户堆收缩时，为避免传入的堆顶地址不是 PGSIZE 的整数倍，需要对两个地址进行对齐操作。
-
-使用 `assert` 语句确保新的堆顶地址不低于预设的堆的起始地址`（USER_VMEM_START）`，以防止非法的内存访问。同时只需遍历从当前堆顶到新堆顶之间的所有物理页，并进行解映射操作以释放这些页面，从而实现堆空间的收缩。
-```c
-// 用户堆空间增加, 返回新的堆顶地址 (注意栈顶最大值限制)
-// 在这里无需修正 p->heap_top
-uint64 uvm_heap_grow(pgtbl_t pgtbl, uint64 heap_top, uint32 len)
-{
-    uint64 new_heap_top = heap_top + len;
-    uint64 ptr;
-    void *pg;
-
-    for (ptr = heap_top; ptr < new_heap_top; ptr += PGSIZE)
+    if(found==0)
     {
-        pg = pmem_alloc(false);
-
-        assert(pg != NULL, "uvm_heap_grow failed");
-
-        vm_mappages(pgtbl, ptr, (uint64)pg, PGSIZE, PTE_W | PTE_R | PTE_U);
-        memset(pg, 0, PGSIZE);
-    }
-
-    return new_heap_top;
-}
-
-// 用户堆空间减少, 返回新的堆顶地址
-// 在这里无需修正 p->heap_top
-uint64 uvm_heap_ungrow(pgtbl_t pgtbl, uint64 heap_top, uint32 len)
-{
-    uint64 new_heap_top = heap_top - len;
-
-    // 将新的堆顶对齐到页面边界
-    uint64 aligned_new_heap_top = PGROUNDUP(new_heap_top);
-    uint64 ptr = PGROUNDUP(heap_top);
-
-    // 在减少堆空间时，new_heap_top 可能会低于堆的最低起始地址，避免错误地释放不属于堆的页面
-    assert(new_heap_top >= USER_VMEM_START, "uvm_heap_ungrow: new heap top out of range");
-
-    // 遍历从当前堆顶到新的堆顶之间的所有页
-    while (ptr > aligned_new_heap_top)
-    {
-        ptr -= PGSIZE;
-        vm_unmappages(pgtbl, ptr, PGSIZE, true); // 解除映射并释放物理页
-    }
-
-    return new_heap_top;
-}
-```
-
-## mmap_region_node 仓库管理
-仓库管理也主要分为初始化、空间申请和空间归还三部分。        
-
-在初始化时，由于仓库维护的是可分配的内存，所以链表的每个节点都指向那块空间的起始地址，然后等要分配空间时，再给那些节点申请相应的空间，并将节点移出仓库即可。
-```c
-// 包装 mmap_region_t 用于仓库组织
-typedef struct mmap_region_node {
-    mmap_region_t mmap;
-    struct mmap_region_node* next;
-} mmap_region_node_t;
-
-// #define N_MMAP 256
-#define N_MMAP 64
-
-// mmap_region_node_t 仓库(单向链表) + 指向链表头节点的指针 + 保护仓库的锁
-static mmap_region_node_t list_mmap_region_node[N_MMAP];
-static mmap_region_node_t* list_head;
-static spinlock_t list_lk;
-
-// 初始化上述三个数据结构
-void mmap_init()
-{
-    spinlock_init(&list_lk, "lk");
-    list_head = list_mmap_region_node;
-    for(int i = 0; i < N_MMAP; ++i)
-    {
-        list_mmap_region_node[i].mmap.begin = MMAP_BEGIN;
-        list_mmap_region_node[i].mmap.npages = 0;
-
-        // 还要判断是否是最后一个
-        list_mmap_region_node[i].next = (i == (N_MMAP - 1)) ? NULL : &list_mmap_region_node[i + 1];
+        intr_on();
+        asm volatile("wfi");// 进入低功耗模式等待可执行的进程
     }
 }
 ```
-申请空间时，只需要将当前`list_head`维护的节点放出即可，因为现在分配的物理页页数都为0，所以具体实现操作就和普通的链表删除一样。
 
-归还节点时，因为采用的是头插法策略，所以肯定要计算当前要归还的节点的位置，然后将仓库现有的可分配空间节点都链接到现在插入的节点后面，然后更新`list_head`即可。
-```c
-// 若申请失败则 panic
-// 注意: list_head 保留, 不会被申请出去
-mmap_region_t* mmap_region_alloc()
-{
-    spinlock_acquire(&list_lk);
-    mmap_region_node_t* region = list_head->next;
-    
-    assert(region != NULL, "mmap_region_alloc failed");
+首先，函数从上次保存的`swtch`位置开始运行，清空`mycpu()->proc`字段，然后标记`found`为1。该字段的意义为：上一次调度成功找到一个可以被调度的进程。然后将进程锁释放掉，这个锁是在调用`proc_sched`的函数中持有，并在`proc_sched`函数中确认持有状态的。该锁的存在是为了避免一个进程同时被多个cpu调度，因此，当调度器想要调度某个进程时，必须首先持有这个进程锁（由调用`proc_sched`的函数负责），当调度完毕后，再由调用`proc_sched`的函数释放掉。总的来说，进程锁会在函数间传递。如果某个函数试图调用`proc_sched`，那么它首先持有当前进程的锁。当进程被`proc_scheduler`调度后，`proc_scheduler`保证持有该锁，然后返回原来的函数，由原来的函数释放锁，这样可以避免（极低概率的）进程被多个cpu调度。
 
-    list_head->next = region->next;
-    spinlock_release(&list_lk);
+## 简单的进程间通信操作(`proc_wait`,`proc_sleep`,`proc_wakeup`,`proc_exit`)
 
-    return &(region->mmap);
-}
+### `proc_sleep`,`proc_wakeup`
 
-// 向仓库归还一个 mmap_region_t
-void mmap_region_free(mmap_region_t* mmap)
-{
-    spinlock_acquire(&list_lk);
-    uint64 begin = (uint64)(&list_mmap_region_node->mmap);
+`proc_sleep`接受两个参数，第一个参数指示睡眠区域，这个参数与`proc_wakeup`相关。`proc_wakeup`接受同样的一个，被称为睡眠区域的参数，当调用`proc_wakeup`时，它尝试唤醒所有具有给定的睡眠区域的，处于睡眠状态的进程。
 
-    // 头插法
-    int idx = ((uint64)mmap - begin) / sizeof(list_mmap_region_node[0]);
-    list_mmap_region_node[idx].next = list_head->next;
-    list_head->next = &list_mmap_region_node[idx];
+`proc_sleep`的第二个参数是和当前睡眠区域相匹配的一个锁，这个锁可以保证与前面的睡眠区域相关的`wakeup`信号不会丢失，避免进程无限期等待下去。而当进入了`proc_sleep`函数后，`proc_sleep`会首先获得进程锁，然后再释放掉睡眠区域的锁。这个顺序是很重要的，调用`proc_wakeup`的函数会检查睡眠区域的锁是否已经取得，如果已经取得才会调用`proc_wakeup`，而`proc_wakeup`则需要取得进程锁才可以唤醒进程，因此，上面的顺序保证了，当释放睡眠区域锁时，即使进入了`proc_wakeup`，它也会等待睡眠区域设置完成后再发送唤醒信号，避免进程无限期地等待下去。
 
-    spinlock_release(&list_lk);
-}
-```
+最后，当进程被唤醒后，`proc_sleep`会获取睡眠区域锁然后释放进程锁来恢复到调用前的状态。
 
-## mmap系列系统调用的实现
-Uno-OS使用mmap来实现零散内存空间的分配，`mmap`和`munmap`两个系统调用实现了对可变内存区域`[MMAP_BEGIN ~ MMAP_END)`的管理（详见`/include/memlayout`）。管理的机制是一个链表，即`mmap_region_t`，每一个`mmap_region_t`实际上是链表的一个节点，他记录了一段连续的可分配可变内存区域。
+`proc_wakeup`的具体逻辑相较`proc_sleep`简单得多，它遍历`procs`数组并唤醒每个具有相同睡眠区域的睡眠进程。
 
-proc_t中另外定义了一个`mmap`字段，他首先指向一个特殊的，管理可变页面数量为0的`mmap_region_t`（我们称为`dumb node`），这样有助于简化我们后面进行分配的操作。
+### `proc_wait`,`proc_exit`
+`proc_wait`函数是在前两个函数的基础上实现的，这个函数又是`proc_exit`实现的基础。该函数会等待任意一个子进程退出，然后将其返回值存入给定的地址中。该函数会保持睡眠，睡眠区域就是该进程自身。如果一个子进程退出了，它会在`proc_exit`函数中调用`proc_wakeup_one`唤醒该进程。
 
-当用户通过`mmap`系统调用请求一个内存区域时，他需要指定一个开始地址以及请求的页面数，当开始地址为0时，`mmap`会找出最靠前的适合的内存块分配给用户，否则使用指定的地址。`mmap`需要找到一个可以容纳整个请求内存块区域的`mmap_region_t`节点。由于我们保证连续内存区域被同一个`mmap_region_t`管理，如果我们找不到一个这样的区域，那么我们就报错。
+该进程从`proc_wait`中被唤醒后，会检查`procs`数组中是哪个进程退出了，然后保存它的状态，如果有两个进程都退出了，它只会保存其中一个的状态。
 
-具体分配时，有四种情况
+在`proc_exit`中还有一个较为特殊的操作，它会使用`proc_wakeup_one`唤醒`proczero`。这个操作是为了避免父进程已经退出，proczero处于睡眠状态，导致进程无法成为proczero的子进程。
 
-- 开始地址和结束地址均不与当前的`mmap_region_t`开始地址和结束地址相同
-- 开始地址相同但结束地址不同
-- 结束地址相同但开始地址不同
-- 两者均相同
+## 睡眠锁（为IO做准备）
 
-情况2，3只需要调整`mmap_region_t`的边界就可以完成分配，情况1需要重新申请一个`mmap_region_t`来管理剩下的内存区域，因为原本连续的一个内存区域被切成了两个。情况4则需要删除当前`mmap_region_t`，因为整个连续的内存区域都被消耗掉。具体的操作方法见`/kernel/mem/uvm.c`
 
-`munmap`会释放此前分配的连续内存区域，这个内存区域首先会形成一个新的`mmap_region_t`，然后，`munmap`会遍历链表，查找一个能够插入的位置，保证该链表按照每个节点管理的开始地址升序排列。然后，检查这个新的`mmap_region_t`是否与相邻节点的开始地址和结束地址相连，如果相连，那么我们合并这两个节点，这样我们就能保证连续内存区域被同一个`mmap_region_t`管理。
-
-同样的，具体释放时也有四种情况
-
-- 均不相邻
-- 只有开头与前驱节点管理的内存区域相邻
-- 只有结尾与后继节点管理的内存区域相邻
-- 开头结尾均相邻
-
-这四种情况的具体处理详见`/kernel/mem/uvm.c`，在此不作赘述。
-
-如果节点应当被插入到链表尾端，那么我们注意只能检查其前驱节点，因为这种情况下检查后继节点将会引发空指针引用异常。
-
-## 页表的复制和释放
-
-`uvm_copy_pgtbl`将一个页表复制到另一个页表，同时将分配的物理页也一并拷贝，这个函数和用于销毁页表的`uvm_destroy_pgtbl`一样，都是在未来实现多进程时的辅助函数。
-
-`uvm_copy_pgtbl`首先将从静态区域开始到堆顶的区域复制到新页表中，然后从最高位地址开始，复制到栈顶，对可变内存区域的分配则需要一些特殊的处理。根据上一节，我们知道，两个节点之间的区域是我们通过`mmap`分配掉的内存区域。由此得出**下一个节点的开始地址-上一个节点的结束地址**是分配掉的地址大小，上一个节点的结束地址是分配掉的内存块的起始地址，这样我们就知道了需要被释放的内存区域，将其释放掉即可

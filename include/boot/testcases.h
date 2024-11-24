@@ -388,6 +388,32 @@ int main()
     return 0;
 }
 
+#elif defined LAB_6_CASE_3
+
+#include "sys.h"
+
+int main()
+{
+    int pid=syscall(SYS_fork);
+
+    if(pid==0){
+        syscall(SYS_print,"sleep!\n");
+        syscall(SYS_sleep,1);
+        syscall(SYS_print,"wakeup!\n");
+        syscall(SYS_exit,1);
+    }else {       // 父进程
+        int exit_state;
+        syscall(SYS_wait, &exit_state);
+        if(exit_state == 1)
+            syscall(SYS_print, "parent: hello\n");
+        else
+            syscall(SYS_print, "parent: error\n");
+    }
+
+    while(1);
+    return 0;
+}
+
 #else
 
 #error "No pre-defined macro. Can not decide what to test or run"

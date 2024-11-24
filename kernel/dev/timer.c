@@ -3,6 +3,7 @@
 #include "dev/timer.h"
 #include "memlayout.h"
 #include "riscv.h"
+#include "proc/proc.h"
 
 /*-------------------- 工作在M-mode --------------------*/
 
@@ -56,6 +57,7 @@ void timer_update()
 {
     spinlock_acquire(&sys_timer.lk);
     sys_timer.ticks++;
+    proc_wakeup(&(sys_timer.ticks));
     spinlock_release(&sys_timer.lk);
 }
 
