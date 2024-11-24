@@ -1,6 +1,5 @@
-// 这个头文件通常认为其他.h文件都应该include
-#ifndef __COMMON_H__
-#define __COMMON_H__
+#ifndef __TYPE_H__
+#define __TYPE_H__
 
 // 类型定义
 
@@ -19,14 +18,5 @@ typedef enum {false = 0, true = 1} bool;
 #ifndef NULL
 #define NULL ((void*)0)
 #endif
-
-#define NCPU 2
-#define NPROC 64       // 最大进程数量
-#define PGSIZE 4096
-
-#define BLOCK_SIZE 1024      // 磁盘的block大小 
-
-// 定义页表层级，2代表三级页表结构（方便内存管理）
-#define PGTABLE_TOPLEVEL 2
 
 #endif

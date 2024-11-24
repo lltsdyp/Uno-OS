@@ -65,4 +65,8 @@
 // 映射区域的起点
 #define MMAP_BEGIN  (MMAP_END - 8096 * PGSIZE)
 
+// virtio 相关
+#define VIRTIO_BASE  0x10001000ul
+#define VIRTIO_IRQ   1
+
 #endif

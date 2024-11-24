@@ -112,6 +112,7 @@ void vm_unmappages(pgtbl_t pgtbl, uint64 va, uint64 len, bool freeit)
 // 相当于填充kernel_pgtbl
 void kvm_init()
 {
+    // TODO:增加磁盘地址映射
     kernel_pgtbl=(pgtbl_t)pmem_alloc(true);
     memset(kernel_pgtbl,0,PGSIZE);
     assert(kernel_pgtbl!=NULL,"kvm_init: failed to initialize kernel page table.");
