@@ -34,6 +34,8 @@
         "proc.h": "c",
         "sys.h": "c",
         "random": "c",
-        "syscall_arch.h": "c"
+        "syscall_arch.h": "c",
+        "str.h": "c",
+        "virtio.h": "c"
     }
 }

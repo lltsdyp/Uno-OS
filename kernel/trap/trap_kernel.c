@@ -9,6 +9,8 @@
 
 #include "trap/intrno.h"
 
+void virtio_disk_intr();
+
 // 中断信息
 char* interrupt_info[16] = {
     "U-mode software interrupt",      // 0
@@ -76,10 +78,15 @@ void external_interrupt_handler()
     
     if (!irq) {
         return ;      // 中断号为0，直接忽略；
-    } else if (irq == UART_IRQ) 
+    } 
+    else if (irq == UART_IRQ) 
     {  
         uart_intr(); // 调用 UART 中断处理程序 
-    } else{
+    } else if(irq==VIRTIO_IRQ)
+    {
+        virtio_intr();
+    }
+    else{
         printf("Unexpected interrupt irq = %d\n", irq);
     }
 

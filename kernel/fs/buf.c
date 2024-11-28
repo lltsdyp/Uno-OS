@@ -45,7 +45,15 @@ static void insert_head(buf_node_t* buf_node, bool head_next)
 // 初始化
 void buf_init()
 {
-
+    spinlock_init(&lk_buf_cache, "buf_cache");
+    
+    head_buf.prev = &head_buf;
+    head_buf.next = &head_buf;
+    for(buf_node_t *buf_node=buf_cache; buf_node<buf_cache+N_BLOCK_BUF; buf_node++)
+    {
+        sleeplock_init(&buf_node->buf.slk, "buf_slk");
+        insert_head(buf_node, 1);
+    }
 }
 
 /*
@@ -56,17 +64,63 @@ void buf_init()
 */
 buf_t* buf_read(uint32 block_num)
 {
+    buf_t *target=NULL;
+    spinlock_acquire(&lk_buf_cache);
 
+    // 首先，我们寻找是否有已经缓存了block_num块对应的buf块
+    for(buf_node_t *buf_node=head_buf.next;buf_node!=&head_buf;buf_node=buf_node->next)
+    {
+        if(buf_node->buf.block_num == block_num && buf_node->buf.disk==true)
+        {
+            
+            buf_node->buf.buf_ref++;
+            spinlock_release(&lk_buf_cache);
+            sleeplock_acquire(&(buf_node->buf.slk));
+            target=&(buf_node->buf);
+        }
+    }
+
+    // 如果没找到，那么找一个空闲的buf块
+    for(buf_node_t *buf_node=head_buf.prev;buf_node!=&head_buf;buf_node=buf_node->prev)
+    {
+        // 找到一个块
+        if(buf_node->buf.buf_ref==0)
+        {
+            buf_node->buf.disk=1;
+            buf_node->buf.block_num=block_num;
+            buf_node->buf.buf_ref=1;
+            spinlock_release(&lk_buf_cache);
+            sleeplock_acquire(&(buf_node->buf.slk));
+            virtio_disk_rw(target, 0);
+            target=&(buf_node->buf);
+        }
+    }
+
+    assert(target!=NULL, "buf_read: no buf available");
+    return target;
 }
 
 // 写函数 (强制磁盘和内存保持一致)
 void buf_write(buf_t* buf)
 {
+    assert(sleeplock_holding(&(buf->slk)),"buf_write: buf is not locked");
 
+    virtio_disk_rw(buf, 1);
 }
 
 // buf 释放
 void buf_release(buf_t* buf)
 {
+    assert(sleeplock_holding(&(buf->slk)),"buf_release: buf is not locked");
+    sleeplock_release(&(buf->slk));
 
+    spinlock_acquire(&lk_buf_cache);
+    buf->buf_ref--;
+    // 当前是最后一个使用这个buf块的
+    if(buf->buf_ref==0)
+    {
+        // 尾插
+        insert_head(&(buf->node), 0);   
+    }
+    spinlock_release(&lk_buf_cache);
 }

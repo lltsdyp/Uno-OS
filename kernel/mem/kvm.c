@@ -120,6 +120,8 @@ void kvm_init()
 
     vm_mappages(kernel_pgtbl, UART_BASE, UART_BASE, 
             UART_REGION_SIZE, PTE_R | PTE_W);
+    vm_mappages(kernel_pgtbl,VIRTIO_BASE,VIRTIO_BASE,
+            VIRTIO_REGION_SIZE, PTE_R|PTE_W);
     vm_mappages(kernel_pgtbl, CLINT_BASE, CLINT_BASE,
             CLINT_REGION_SIZE, PTE_R | PTE_W);
     vm_mappages(kernel_pgtbl, PLIC_BASE, PLIC_BASE,
