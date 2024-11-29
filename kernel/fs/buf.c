@@ -119,8 +119,15 @@ void buf_release(buf_t* buf)
     // 当前是最后一个使用这个buf块的
     if(buf->buf_ref==0)
     {
+        // 寻找对应的位置
+        buf_node_t *buf_node=head_buf;
+        spinlock_acquire(&lk_buf_cache);
+        while(&(buf_node->buf)!=buf)
+            buf_node=buf_node->next;
+        assert(buf_node!=&head_buf, "buf_release: buf not found");
         // 尾插
         insert_head(&(buf->node), 0);   
+        spinlock_release(&lk_buf_cache);
     }
     spinlock_release(&lk_buf_cache);
 }
