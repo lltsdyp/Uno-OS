@@ -160,14 +160,68 @@ void panic(const char *fmt, ...)
         ;
 }
 
-// 为什么condition的类型是uint64呢。。。:(
-void assert(uint64 condition, const char *warning, ...)
+void assert(bool condition, const char *warning, ...)
 {
     if (condition == false)
     {
         va_list ap;
         va_start(ap, warning);
-        panic(warning, ap); // 调用时只传递 warning，处理 ap 在 panic 内
+        
+        vprintf("Assert:", NULL);
+        vprintf(warning, ap);
+        vprintf("\n", NULL);
+
         va_end(ap);
+        panic("");
     }
 }
+
+// void panic(const char *fmt, ...)
+// {
+//     va_list ap;
+//     print_lk.locked=0;
+
+//     // 初始化可变参数列表 `ap`
+//     va_start(ap, fmt);
+//     vpanic(fmt, ap);
+//     // vprintf("panic: ",0);
+
+//     // vprintf(fmt, ap);
+//     // vprintf("\n",0);
+//     // va_end(ap);
+//     // // 设置 panicked 标志位，冻结其他 CPU 的 UART 输出
+//     // panicked = 1;
+
+
+//     // // 进入无限循环，使程序在此处停止运行
+//     // while (1)
+//     //     ;
+// }
+
+// void vpanic(const char *fmt, va_list ap){
+
+//     vprintf("panic: ",0);
+//     vprintf(fmt, ap);
+//     vprintf("\n",0);
+
+//     va_end(ap);
+
+//     // 设置 panicked 标志位，冻结其他 CPU 的 UART 输出
+//     panicked = 1;
+
+//     // 进入无限循环，使程序在此处停止运行
+//     while (1)
+//         ;
+// }
+
+// void assert(bool condition, const char *warning, ...)
+// {
+//     if (condition == false)
+//     {
+//         va_list ap;
+//         va_start(ap, warning);
+//         // panic(warning, ap); // 调用时只传递 warning，处理 ap 在 panic 内
+//         // va_end(ap);
+//         vpanic(warning, ap);
+//     }
+// }

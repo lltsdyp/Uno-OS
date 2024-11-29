@@ -21,6 +21,8 @@ int main()
 
     if(cpuid == 0) {
         
+        assert(0, "%s\n", "assert:");
+
         print_init();
         printf("cpu %d is booting!\n", cpuid);
         pmem_init();

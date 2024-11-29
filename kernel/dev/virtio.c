@@ -16,6 +16,7 @@
 #include "proc/proc.h"
 #include "riscv.h"
 #include "memlayout.h"
+#include "mem/pmem.h"
 
 // the address of virtio mmio register r.
 #define R(r) ((volatile uint32 *)(VIRTIO_BASE + (r)))
@@ -212,7 +213,8 @@ void virtio_disk_rw(buf_t *b, bool write)
 
     // buf0 is on a kernel stack, which is not direct mapped,
     // thus the call to kvmpa().
-    uint64 addr = ALIGN_DOWN((uint64)&buf0, PGSIZE);
+    // uint64 addr = PGROUNDDOWN((uint64) &buf0, PGSIZE);
+    uint64 addr = PGROUNDDOWN((uint64) &buf0);
     uint64 off  = ((uint64)&buf0) % PGSIZE;
 
     pte_t* pte = vm_getpte(NULL, addr, false);

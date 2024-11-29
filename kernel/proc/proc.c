@@ -50,6 +50,12 @@ static void fork_return()
     // 由于调度器中上了锁，所以这里需要解锁
     proc_t* p = myproc();
     spinlock_release(&p->lk);
+
+    // 仅在第一个进程初始化文件系统
+    if (p->pid == 1) {
+        fs_init();  // 初始化文件系统
+    }
+
     trap_user_return();
 }
 
