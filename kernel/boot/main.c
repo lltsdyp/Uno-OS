@@ -12,6 +12,7 @@
 #include "dev/vio.h"
 #include "proc/proc.h"
 #include "trap/trap.h"
+#include "dev/plic.h"
 
 volatile static int started = 0;
 
@@ -20,16 +21,15 @@ int main()
     int cpuid = r_tp();
 
     if(cpuid == 0) {
-        
-        assert(0, "%s\n", "assert:");
-
         print_init();
         printf("cpu %d is booting!\n", cpuid);
         pmem_init();
         kvm_init();
         kvm_inithart();
+        plic_init();
+        plic_inithart();
         trap_kernel_init();
-        trap_kernel_inithart();        
+        trap_kernel_inithart();
         mmap_init();
         virtio_disk_init();
         proc_init();

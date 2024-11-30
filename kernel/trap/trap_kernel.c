@@ -84,7 +84,7 @@ void external_interrupt_handler()
         uart_intr(); // 调用 UART 中断处理程序 
     } else if(irq==VIRTIO_IRQ)
     {
-        virtio_intr();
+        virtio_disk_intr();
     }
     else{
         printf("Unexpected interrupt irq = %d\n", irq);

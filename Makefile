@@ -51,5 +51,6 @@ qemu-gdb: clean $(KERN) $(USER) $(MKFS) .gdbinit
 	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
 
 clean:
+	$(MAKE) --directory=$(KERN) clean
 	$(MAKE) --directory=$(MKFS) clean
-	rm -f $(KERNEL_ELF) $(FS_IMG) .gdbinit
+	rm -f $(KERNEL_ELF) $(FS_IMG) .gdbinit .gdbinit-gui
