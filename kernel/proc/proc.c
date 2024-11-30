@@ -9,6 +9,7 @@
 #include "lib/lock.h"
 #include "proc/proc.h"
 #include "riscv.h"
+#include "fs/fs.h"
 
 // in trampoline.S
 extern char trampoline[];

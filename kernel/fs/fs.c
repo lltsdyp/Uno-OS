@@ -1,5 +1,6 @@
 #include "fs/fs.h"
 #include "fs/buf.h"
+#include "fs/bitmap.h"
 #include "lib/str.h"
 #include "lib/print.h"
 
@@ -27,12 +28,15 @@ static void sb_print()
 // 文件系统初始化
 void fs_init()
 {
+    buf_init();
+
     buf_t* buf = buf_read(SB_BLOCK_NUM);
-    memmove(&sb, buf->data, sizeof(super_block_t));
+    memcpy(&sb, buf->data, sizeof(sb));
     buf_release(buf);
 
     // 检查超级块的magic值是否正确，确保文件系统没有损坏
     assert(sb.magic == FS_MAGIC, "fs_init: invalid super block magic number");
+    assert(sb.block_size == BLOCK_SIZE, "fs_init: invalid super block size");
 
     sb_print();
 }
