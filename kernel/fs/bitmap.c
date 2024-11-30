@@ -34,9 +34,6 @@ static uint32 bitmap_search_and_set(uint32 bitmap_block)
             // 从磁盘读取分配的块
             buf_t *buf = buf_read(block_num);
 
-            // 清零分配的块，确保块的内容为空
-            memset(buf->data, 0, BLOCK_SIZE);
-
             // 将更新后的块写回磁盘
             buf_write(buf);
             buf_release(buf);
@@ -48,6 +45,7 @@ static uint32 bitmap_search_and_set(uint32 bitmap_block)
 
     // 如果没有找到空闲块，抛出异常
     panic("bitmap_search_and_set: out of blocks");
+    return -1;
 }
 
 // bitmap_alloc_block
@@ -58,7 +56,6 @@ uint32 bitmap_alloc_block()
     // 在数据块位图中查找并分配一个空闲块
     return bitmap_search_and_set(sb.data_bitmap_start);
 }
-
 
 // unset bit
 // 该函数用于在指定的块位图中释放指定的块，设置对应的位为 0（表示空闲）。
@@ -114,9 +111,6 @@ void bitmap_print(uint32 bitmap_block_num)
 {
     // 从磁盘读取指定的块位图到缓冲区
     buf_t* buf = buf_read(bitmap_block_num);
-
-    // 获取缓冲区中的位图数据
-    uint32* bitmap = (uint32*)buf->data;
 
     // 打印该位图中所有位
     printf("bits in bitmap %d:\n", bitmap_block_num);
