@@ -5,3 +5,4 @@ kernel-qemu
 .gdbinit
 # 该文件为自动生成
 /include/proc/initcode.h 
+/mkfs/mkfs
