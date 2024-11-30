@@ -7,6 +7,9 @@
 #include "syscall/sysfunc.h"
 #include "syscall/syscall.h"
 #include "dev/timer.h"
+#include "fs/bitmap.h"
+#include "fs/buf.h"
+#include "fs/fs.h"
 
 // 打印字符
 // uint64 addr
@@ -189,5 +192,82 @@ uint64 sys_sleep()
         proc_sleep((void *)&(sys_timer.ticks),&(sys_timer.lk));
     }
     spinlock_release(&(sys_timer.lk));
+    return 0;
+}
+
+
+// temporarily
+extern super_block_t sb;
+
+// 申请一个block
+// 返回申请到的block的序号
+uint64 sys_alloc_block()
+{
+    uint32 ret = bitmap_alloc_block();
+    bitmap_print(sb.data_bitmap_start); 
+    return ret;
+}
+
+// 释放一个block
+// uint32 block_num 要释放的block序号
+// 成功返回0
+uint64 sys_free_block()
+{
+    uint32 block_num;
+    arg_uint32(0, &block_num);
+    bitmap_free_block(block_num);
+    bitmap_print(sb.data_bitmap_start);
+    return 0;
+}
+
+// 测试 buf_read
+// uint32 block_num 要被读取的block序号
+// uint64 addr 内容放入用户的这个地址
+// 成功返回buf的地址
+uint64 sys_read_block()
+{
+    uint32 block_num;
+    uint64 addr;
+    arg_uint32(0, &block_num);
+    arg_uint64(1, &addr);
+
+    buf_t* buf = buf_read(block_num);
+    uvm_copyout(myproc()->pgtbl, addr, (uint64)(buf->data), 128);
+    return (uint64)buf;
+}
+
+// 修改block
+// uint64 buf_addr buf的地址
+// uint64 write_addr 用户希望写入的数据地址
+// 返回0
+uint64 sys_write_block()
+{
+    uint64 buf_addr, write_addr;
+    arg_uint64(0, &buf_addr);
+    arg_uint64(1, &write_addr);
+
+    buf_t* buf = (buf_t*)(buf_addr);
+    uvm_copyin(myproc()->pgtbl, (uint64)(buf->data), write_addr, 128);
+
+    return 0;
+}
+
+// 测试 buf_release
+// uint64 buf_addr buf的地址
+uint64 sys_release_block()
+{
+    uint64 buf_addr;
+    arg_uint64(0, &buf_addr);
+
+    buf_t* buf = (buf_t*)(buf_addr);
+    buf_release(buf);
+    
+    return 0;
+}
+
+// 测试 buf_print
+uint64 sys_show_buf()
+{
+    buf_print();
     return 0;
 }

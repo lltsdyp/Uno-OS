@@ -68,10 +68,11 @@ buf_t* buf_read(uint32 block_num)
     spinlock_acquire(&lk_buf_cache);
 
     // 首先，我们寻找是否有已经缓存了block_num块对应的buf块
-    for(buf_node_t *buf_node=head_buf.next;buf_node!=&head_buf;buf_node=buf_node->next)
+    for(buf_node_t *buf_node=head_buf.next;target==NULL&&buf_node!=&head_buf;buf_node=buf_node->next)
     {
-        if(buf_node->buf.block_num == block_num && buf_node->buf.disk==true)
+        if(buf_node->buf.block_num == block_num /*&& buf_node->buf.disk==true*/)
         {
+            insert_head(buf_node, 1);
             target=&(buf_node->buf);
             target->buf_ref++;
             spinlock_release(&lk_buf_cache);
@@ -80,13 +81,14 @@ buf_t* buf_read(uint32 block_num)
     }
 
     // 如果没找到，那么找一个空闲的buf块
-    for(buf_node_t *buf_node=head_buf.prev;buf_node!=&head_buf;buf_node=buf_node->prev)
+    for(buf_node_t *buf_node=head_buf.prev;target==NULL&&buf_node!=&head_buf;buf_node=buf_node->prev)
     {
         // 找到一个块
         if(buf_node->buf.buf_ref==0)
         {
+            insert_head(buf_node,1);
             target=&(buf_node->buf);
-            target->disk=1;
+            // target->disk=1;
             target->block_num=block_num;
             target->buf_ref=1;
             spinlock_release(&lk_buf_cache);
@@ -120,13 +122,24 @@ void buf_release(buf_t* buf)
     {
         // 寻找对应的位置
         buf_node_t *buf_node=&head_buf;
-        spinlock_acquire(&lk_buf_cache);
         while(&(buf_node->buf)!=buf)
             buf_node=buf_node->next;
         assert(buf_node!=&head_buf, "buf_release: buf not found");
         // 尾插
         insert_head(buf_node, 0);   
-        spinlock_release(&lk_buf_cache);
     }
     spinlock_release(&lk_buf_cache);
+}
+
+void buf_print()
+{
+    printf("\nbuf_cache:\n");
+    buf_node_t *b;
+    for (b = head_buf.next; b != &head_buf; b = b->next)
+    {
+        printf("buf %d: ref = %d, block_num = %d\n", b - buf_cache, b->buf.buf_ref, b->buf.block_num);
+        for (int i = 0; i < 8; i++)
+            printf("%d ", b->buf.data[i]);
+        printf("\n");
+    }
 }

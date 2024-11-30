@@ -26,10 +26,10 @@ int main()
         pmem_init();
         kvm_init();
         kvm_inithart();
-        plic_init();
-        plic_inithart();
         trap_kernel_init();
         trap_kernel_inithart();
+        plic_init();
+        plic_inithart();
         mmap_init();
         virtio_disk_init();
         proc_init();

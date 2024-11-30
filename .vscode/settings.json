@@ -36,6 +36,9 @@
         "random": "c",
         "syscall_arch.h": "c",
         "str.h": "c",
-        "virtio.h": "c"
+        "virtio.h": "c",
+        "type.h": "c",
+        "syscall_num.h": "c",
+        "cstdlib": "c"
     }
 }

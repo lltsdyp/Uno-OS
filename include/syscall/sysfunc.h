@@ -11,5 +11,11 @@ uint64 sys_fork();
 uint64 sys_wait();
 uint64 sys_exit();
 uint64 sys_sleep();
+uint64 sys_alloc_block();
+uint64 sys_free_block();
+uint64 sys_read_block();
+uint64 sys_write_block();
+uint64 sys_release_block();
+uint64 sys_show_buf();
 
 #endif

@@ -22,5 +22,6 @@ void   buf_init();
 buf_t* buf_read(uint32 block_num);
 void   buf_write(buf_t* buf);
 void   buf_release(buf_t* buf);
+void   buf_print();
 
 #endif
