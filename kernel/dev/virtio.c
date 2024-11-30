@@ -21,6 +21,8 @@
 // the address of virtio mmio register r.
 #define R(r) ((volatile uint32 *)(VIRTIO_BASE + (r)))
 
+extern pgtbl_t kernel_pgtbl;
+
 static struct disk
 {
     // memory for virtio descriptors &c for queue 0.
@@ -217,7 +219,7 @@ void virtio_disk_rw(buf_t *b, bool write)
     uint64 addr = PGROUNDDOWN((uint64) &buf0);
     uint64 off  = ((uint64)&buf0) % PGSIZE;
 
-    pte_t* pte = vm_getpte(NULL, addr, false);
+    pte_t* pte = vm_getpte(kernel_pgtbl, addr, false);
     disk.desc[idx[0]].addr = (uint64)PTE_TO_PA(*pte) + off;
     disk.desc[idx[0]].len = sizeof(buf0);
     disk.desc[idx[0]].flags = VRING_DESC_F_NEXT;

@@ -72,11 +72,10 @@ buf_t* buf_read(uint32 block_num)
     {
         if(buf_node->buf.block_num == block_num && buf_node->buf.disk==true)
         {
-            
-            buf_node->buf.buf_ref++;
-            spinlock_release(&lk_buf_cache);
-            sleeplock_acquire(&(buf_node->buf.slk));
             target=&(buf_node->buf);
+            target->buf_ref++;
+            spinlock_release(&lk_buf_cache);
+            sleeplock_acquire(&(target->slk));
         }
     }
 
@@ -86,13 +85,13 @@ buf_t* buf_read(uint32 block_num)
         // 找到一个块
         if(buf_node->buf.buf_ref==0)
         {
-            buf_node->buf.disk=1;
-            buf_node->buf.block_num=block_num;
-            buf_node->buf.buf_ref=1;
-            spinlock_release(&lk_buf_cache);
-            sleeplock_acquire(&(buf_node->buf.slk));
-            virtio_disk_rw(target, 0);
             target=&(buf_node->buf);
+            target->disk=1;
+            target->block_num=block_num;
+            target->buf_ref=1;
+            spinlock_release(&lk_buf_cache);
+            sleeplock_acquire(&(target->slk));
+            virtio_disk_rw(target, 0);
         }
     }
 

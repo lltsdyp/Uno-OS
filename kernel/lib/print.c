@@ -160,9 +160,9 @@ void panic(const char *fmt, ...)
         ;
 }
 
-void assert(bool condition, const char *warning, ...)
+void assert(uint64 condition, const char *warning, ...)
 {
-    if (condition == false)
+    if (!condition)
     {
         va_list ap;
         va_start(ap, warning);

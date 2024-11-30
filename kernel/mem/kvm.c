@@ -24,6 +24,7 @@ pte_t *vm_getpte(pgtbl_t pgtbl, uint64 va, bool alloc)
 {
     // 虚拟地址不能大于VA_MAX
     assert(va<=VA_MAX,"vm_getpte: invalid virtual address:%x",va);
+    assert(pgtbl!=NULL,"vm_getpte: Not suggested, please give kernel_pgtbl instead of NULL");
 
     uint64 round_va=PGROUNDDOWN(va);
     pte_t *pte=NULL;

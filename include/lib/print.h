@@ -11,5 +11,5 @@ void printf(const char* fmt, ...);
 
 void vpanic(const char *fmt, va_list ap);
 void panic(const char *fmt, ...);
-void assert(bool condition, const char* warning, ...);
+void assert(uint64 condition, const char* warning, ...);
 #endif
