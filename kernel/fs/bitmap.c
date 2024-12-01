@@ -2,6 +2,7 @@
 #include "fs/fs.h"
 #include "fs/bitmap.h"
 #include "lib/print.h"
+#include "lib/str.h"
 
 extern super_block_t sb;
 
@@ -29,16 +30,12 @@ static uint32 bitmap_search_and_set(uint32 bitmap_block)
             buf_release(bp);
 
             // 分配的块号（当前位偏移量 + 位图块的起始块号 + 1）
-            block_num = bi + bitmap_block + 1;
+            block_num = bi + bitmap_block;
 
-            // 从磁盘读取分配的块
             buf_t *buf = buf_read(block_num);
-
-            // 将更新后的块写回磁盘
-            buf_write(buf);
+            memset(bp->data, 0, BLOCK_SIZE);
             buf_release(buf);
 
-            // 返回分配的块号
             return block_num;
         }
     }
@@ -65,7 +62,7 @@ static void bitmap_unset(uint32 bitmap_block, uint32 num)
     buf_t* buf = buf_read(bitmap_block);
 
     // 计算给定块号对应的位图中的偏移量
-    num -= bitmap_block + 1;
+    num -= bitmap_block;
 
     // 计算该块在位图中的位置
     uint8 m = 1 << (num % 8);
@@ -79,8 +76,6 @@ static void bitmap_unset(uint32 bitmap_block, uint32 num)
 }
 
 // bitmap_free_block
-// 该函数用于释放一个数据块，更新数据块位图。
-// 输入参数：block_num - 需要释放的块号
 void bitmap_free_block(uint32 block_num)
 {
     // 在数据块位图中释放指定的块
@@ -88,8 +83,6 @@ void bitmap_free_block(uint32 block_num)
 }
 
 // bitmap_alloc_inode
-// 该函数用于分配一个 inode（在 inode 位图中），并返回该 inode 的编号。
-// 返回值：分配的 inode 编号
 uint32 bitmap_alloc_inode()
 {
     // 在 inode 位图中查找并分配一个空闲 inode
@@ -97,8 +90,6 @@ uint32 bitmap_alloc_inode()
 }
 
 // bitmap_free_inode
-// 该函数用于释放一个 inode，更新 inode 位图。
-// 输入参数：inode_num - 需要释放的 inode 编号
 void bitmap_free_inode(uint32 inode_num)
 {
     // 在 inode 位图中释放指定的 inode
@@ -119,10 +110,8 @@ void bitmap_print(uint32 bitmap_block_num)
 
         // 如果当前位为 1，表示该块已分配
         if ((buf->data[i / 8] & m) != 0) 
-            printf("Bit %d is used\n", i);
-
-        // else printf("Bit %d is not used\n", i);
+            printf("Bit %d is alloced\n", i);
+            
     }
-
     buf_release(buf);
 }
