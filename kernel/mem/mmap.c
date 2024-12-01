@@ -12,8 +12,7 @@ typedef struct mmap_region_node {
     struct mmap_region_node* next;
 } mmap_region_node_t;
 
-// #define N_MMAP 256
-#define N_MMAP 64
+#define N_MMAP 256
 
 // mmap_region_node_t 仓库(单向链表) + 指向链表头节点的指针 + 保护仓库的锁
 static mmap_region_node_t list_mmap_region_node[N_MMAP];

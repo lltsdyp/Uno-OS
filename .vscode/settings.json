@@ -39,6 +39,7 @@
         "virtio.h": "c",
         "type.h": "c",
         "syscall_num.h": "c",
-        "cstdlib": "c"
+        "cstdlib": "c",
+        "thread": "c"
     }
 }

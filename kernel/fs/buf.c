@@ -4,7 +4,7 @@
 #include "lib/print.h"
 #include "lib/str.h"
 
-#define N_BLOCK_BUF 6
+#define N_BLOCK_BUF 64
 #define BLOCK_NUM_UNUSED 0xFFFFFFFF
 
 // 将buf包装成双向循环链表的node
