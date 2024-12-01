@@ -99,33 +99,25 @@ void external_interrupt_handler()
 [`insert_head`](./kernel/fs/buf.c#23)是工具函数，用于将buf_node插入到链表中。在系统启动过程中，首先需要对buf块进行初始化，该操作由[`buf_init`](./kernel/fs/buf.c#46)函数完成。`buf_read`和`buf_write`函数分别完成对缓冲区的读和写操作。
 
 ``` c
+
+/*
+    首先假设这个block_num对应的block在内存中有备份, 找到它并上锁返回
+    如果找不到, 尝试申请一个无人使用的buf, 去磁盘读取对应block并上锁返回
+    如果没有空闲buf, panic报错
+*/
 buf_t* buf_read(uint32 block_num)
 {
-    buf_t *target=NULL;
+    buf_t *target=NULL,*buf_node=head_buf.prev,*oldest_node=NULL;
     spinlock_acquire(&lk_buf_cache);
 
-    // 首先，我们寻找是否有已经缓存了block_num块对应的buf块
-    for(buf_node_t *buf_node=head_buf.next;target==NULL&&buf_node!=&head_buf;buf_node=buf_node->next)
-    {
-        if(buf_node->buf.block_num == block_num /*&& buf_node->buf.disk==true*/)
-        {
-            insert_head(buf_node, 1);
-            target=&(buf_node->buf);
-            target->buf_ref++;
-            spinlock_release(&lk_buf_cache);
-            sleeplock_acquire(&(target->slk));
-        }
-    }
-
-    // 如果没找到，那么找一个空闲的buf块
-    for(buf_node_t *buf_node=head_buf.prev;target==NULL&&buf_node!=&head_buf;buf_node=buf_node->prev)
+    // 局部性原理
+    while(target==NULL&&buf_node->buf_ref==0&&buf_node!=&head_buf)
     {
         // 找到一个块
-        if(buf_node->buf.buf_ref==0)
+        if(buf_node->buf_ref==0)
         {
             insert_head(buf_node,1);
-            target=&(buf_node->buf);
-            // target->disk=1;
+            target=buf_node;
             target->block_num=block_num;
             target->buf_ref=1;
             spinlock_release(&lk_buf_cache);
@@ -133,11 +125,31 @@ buf_t* buf_read(uint32 block_num)
             virtio_disk_rw(target, 0);
         }
     }
+    // 避免多次遍历链表
+    oldest_node=buf_node->next;
+
+    buf_node=head_buf.next;
+    while(target==NULL&&buf_node!=oldest_node)
+    {
+        if(buf_node->block_num == block_num)
+        {
+            insert_head(buf_node, 1);
+            target=buf_node;
+            target->buf_ref++;
+            spinlock_release(&lk_buf_cache);
+            sleeplock_acquire(&(target->slk));
+        }
+        buf_node=buf_node->next;
+    }
+
+    if(target==NULL && oldest_node!=&head_buf)
+    {
+        target=oldest_node;
+    }
 
     assert(target!=NULL, "buf_read: no buf available");
     return target;
 }
-
 // 写函数 (强制磁盘和内存保持一致)
 void buf_write(buf_t* buf)
 {
@@ -145,9 +157,29 @@ void buf_write(buf_t* buf)
 
     virtio_disk_rw(buf, 1);
 }
-```
 
-`buf_read`函数分两步执行，首先检查是否存在已经缓存了该块的buf块，如果存在则直接返回该buf块，否则寻找一个空闲的buf块。
+```
+`buf_read`函数基于局部性原理，首先访问两端最新的节点，同时记录最老的未被使用buf块。如果遍历完整个buf链都没找到，则直接使用之前记录的最老未使用buf块。
+
+当`buf_release`被调用时，如果`buf_ref`为0，则将其插入到尾部。
+``` c
+// buf 释放
+void buf_release(buf_t* buf)
+{
+    assert(sleeplock_holding(&(buf->slk)),"buf_release: buf is not locked");
+    sleeplock_release(&(buf->slk));
+
+    spinlock_acquire(&lk_buf_cache);
+    buf->buf_ref--;
+    // 当前是最后一个使用这个buf块的
+    if(buf->buf_ref==0)
+    {
+        // 尾插
+        insert_head(buf, 0);   
+    }
+    spinlock_release(&lk_buf_cache);
+}
+```
 
 ## 文件系统初始化
 在初始化文件系统时，我们主要做以下两件事：      

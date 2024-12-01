@@ -18,7 +18,8 @@ typedef struct buf {
     uint32 buf_ref; // 还有多少处引用没有释放 
     bool disk;      // 在磁盘驱动中使用
 
-    struct buf_node* node_ref; // 指向其对应的buf_node，方便插入
+    struct buf* next;
+    struct buf* prev;
 
 } buf_t;
 
