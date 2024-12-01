@@ -3,6 +3,8 @@
 
 #include "lib/lock.h"
 
+struct buf_node;
+
 typedef struct buf {
     /* 
         睡眠锁: 保护 data[BLOCK_SIZE] + disk
@@ -15,6 +17,8 @@ typedef struct buf {
     
     uint32 buf_ref; // 还有多少处引用没有释放 
     bool disk;      // 在磁盘驱动中使用
+
+    struct buf_node* node_ref; // 指向其对应的buf_node，方便插入
 
 } buf_t;
 

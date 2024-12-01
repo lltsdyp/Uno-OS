@@ -4,7 +4,7 @@
 #include "lib/print.h"
 #include "lib/str.h"
 
-#define N_BLOCK_BUF 64
+#define N_BLOCK_BUF 6
 #define BLOCK_NUM_UNUSED 0xFFFFFFFF
 
 // 将buf包装成双向循环链表的node
@@ -53,6 +53,7 @@ void buf_init()
     {
         sleeplock_init(&buf_node->buf.slk, "buf_slk");
         buf_node->buf.block_num = BLOCK_NUM_UNUSED;
+        buf_node->buf.node_ref=buf_node;
         insert_head(buf_node, 1);
     }
 }
@@ -61,7 +62,6 @@ void buf_init()
     首先假设这个block_num对应的block在内存中有备份, 找到它并上锁返回
     如果找不到, 尝试申请一个无人使用的buf, 去磁盘读取对应block并上锁返回
     如果没有空闲buf, panic报错
-    (建议合并xv6的bget())
 */
 buf_t* buf_read(uint32 block_num)
 {
@@ -71,7 +71,7 @@ buf_t* buf_read(uint32 block_num)
     // 首先，我们寻找是否有已经缓存了block_num块对应的buf块
     for(buf_node_t *buf_node=head_buf.next;target==NULL&&buf_node!=&head_buf;buf_node=buf_node->next)
     {
-        if(buf_node->buf.block_num == block_num /*&& buf_node->buf.disk==true*/)
+        if(buf_node->buf.block_num == block_num)
         {
             insert_head(buf_node, 1);
             target=&(buf_node->buf);
@@ -107,6 +107,7 @@ void buf_write(buf_t* buf)
 {
     assert(sleeplock_holding(&(buf->slk)),"buf_write: buf is not locked");
 
+    insert_head(buf->node_ref, 1);
     virtio_disk_rw(buf, 1);
 }
 
@@ -119,16 +120,17 @@ void buf_release(buf_t* buf)
     spinlock_acquire(&lk_buf_cache);
     buf->buf_ref--;
     // 当前是最后一个使用这个buf块的
-    if(buf->buf_ref==0)
-    {
-        // 寻找对应的位置
-        buf_node_t *buf_node=&head_buf;
-        while(&(buf_node->buf)!=buf)
-            buf_node=buf_node->next;
-        assert(buf_node!=&head_buf, "buf_release: buf not found");
-        // 尾插
-        insert_head(buf_node, 0);   
-    }
+    // if(buf->buf_ref==0)
+    // {
+        // // 寻找对应的位置
+        // buf_node_t *buf_node=&head_buf;
+        // while(&(buf_node->buf)!=buf)
+        //     buf_node=buf_node->next;
+        // assert(buf_node!=&head_buf, "buf_release: buf not found");
+        // // 头插
+        // insert_head(buf_node, 1);   
+    // }
+    // insert_head(buf->node_ref, 1);
     spinlock_release(&lk_buf_cache);
 }
 
