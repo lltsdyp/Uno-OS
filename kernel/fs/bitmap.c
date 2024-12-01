@@ -121,7 +121,7 @@ void bitmap_print(uint32 bitmap_block_num)
         if ((buf->data[i / 8] & m) != 0) 
             printf("Bit %d is used\n", i);
 
-        else printf("Bit %d is not used\n", i);
+        // else printf("Bit %d is not used\n", i);
     }
 
     buf_release(buf);

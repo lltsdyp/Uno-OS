@@ -4,7 +4,7 @@
 #include "lib/print.h"
 #include "lib/str.h"
 
-#define N_BLOCK_BUF 64
+#define N_BLOCK_BUF 6
 #define BLOCK_NUM_UNUSED 0xFFFFFFFF
 
 // 将buf包装成双向循环链表的node
@@ -52,6 +52,7 @@ void buf_init()
     for(buf_node_t *buf_node=buf_cache; buf_node<buf_cache+N_BLOCK_BUF; buf_node++)
     {
         sleeplock_init(&buf_node->buf.slk, "buf_slk");
+        buf_node->buf.block_num = BLOCK_NUM_UNUSED;
         insert_head(buf_node, 1);
     }
 }
