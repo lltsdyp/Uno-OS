@@ -21,9 +21,9 @@ typedef struct super_block {
     unsigned int inode_blocks;
     unsigned int data_blocks;
     unsigned int total_blocks;
-
 } super_block_t;
 
+// inode 64 byte
 typedef struct inode_disk {
     short type;
     short major;
@@ -33,6 +33,18 @@ typedef struct inode_disk {
     unsigned int addrs[13];
 } inode_disk_t;
 
+// direntory entry 32 byte
+typedef struct dirent {
+    unsigned short inode_num;
+    char name[30];
+} dirent_t;
+
+// 文件类型
+#define FT_UNUSED 0
+#define FT_DIR    1
+#define FT_FILE   2
+#define FT_DEVICE 3 
+
 // 常量定义 
 #define BLOCK_SIZE       1024
 #define N_DATA_BLOCK     8192 // 1个block的bitmap管理的极限
@@ -41,9 +53,13 @@ typedef struct inode_disk {
 #define INODE_PER_BLOCK  (BLOCK_SIZE / sizeof(inode_disk_t)) // 每个block里的inode数量
 #define N_INODE          (N_INODE_BLOCK * INODE_PER_BLOCK)   // inode总数
 
+// 确定inode所在的inode block序号
+#define INODE_LOCATE_BLOCK(inum, sb)  ((inum) / INODE_PER_BLOCK + sb.inode_start)
+
 int fsfd;
 super_block_t sb;
 
+// 大小端转换
 unsigned short xshort(unsigned short x)
 {
     unsigned short y;
@@ -53,6 +69,7 @@ unsigned short xshort(unsigned short x)
     return y;
 }
 
+// 大小端转换
 unsigned int xint(unsigned int x)
 {
     unsigned int y;
@@ -64,6 +81,7 @@ unsigned int xint(unsigned int x)
     return y;
 }
 
+// 向磁盘写一个block
 void block_write(unsigned int block_num, void* buf)
 {
     if(lseek(fsfd, BLOCK_SIZE * block_num, 0) != BLOCK_SIZE * block_num) {
@@ -76,16 +94,106 @@ void block_write(unsigned int block_num, void* buf)
     }
 }
 
+// 从磁盘读一个block
 void block_read(unsigned int block_num, void* buf)
 {
     if(lseek(fsfd, BLOCK_SIZE * block_num, 0) != BLOCK_SIZE * block_num) {
         perror("lsek");
         exit(1);
     }
-    if(write(fsfd, buf, BLOCK_SIZE) != BLOCK_SIZE) {
+    if(read(fsfd, buf, BLOCK_SIZE) != BLOCK_SIZE) {
         perror("read");
         exit(1);
     }
+}
+
+// 申请一个block(修改bitmap)
+unsigned int block_alloc()
+{
+    char buf[BLOCK_SIZE];
+    unsigned int byte, shift;
+    unsigned char bit_cmp;
+
+    block_read(sb.data_bitmap_start, buf);
+    for(byte = 0; byte < BLOCK_SIZE; byte++) {
+        bit_cmp = 1;
+        for(shift = 0; shift <= 7; shift++) {
+            if((bit_cmp & buf[byte]) == 0) {
+                buf[byte] |= bit_cmp;
+                goto find;
+            }
+            bit_cmp = bit_cmp << 1;
+        }
+    }
+    printf("block_alloc: no bit left\n");
+    while(1);
+find:
+    block_write(sb.data_bitmap_start, buf);
+    return byte * 8 + shift + sb.data_start;
+}
+
+
+// 从磁盘读一个inode
+void inode_read(unsigned int inode_num, inode_disk_t* ip)
+{
+    char buf[BLOCK_SIZE];
+    inode_disk_t* dip;
+
+    unsigned int block_num = INODE_LOCATE_BLOCK(inode_num, sb);
+    block_read(block_num, buf);
+    dip = ((inode_disk_t*)buf) + (inode_num % INODE_PER_BLOCK);
+    *ip = *dip;
+}
+
+// 向磁盘写一个inode
+void inode_write(unsigned short inode_num, inode_disk_t* ip)
+{
+    char buf[BLOCK_SIZE];
+    inode_disk_t* dip;
+
+    unsigned int block_num = INODE_LOCATE_BLOCK(inode_num, sb);
+    block_read(block_num, buf);
+    dip = ((inode_disk_t*)buf) + (inode_num % INODE_PER_BLOCK);
+    *dip = *ip;
+    block_write(block_num, buf);
+}
+
+// 申请一个inode (修改bitmap)
+unsigned short inode_alloc()
+{
+    char buf[BLOCK_SIZE];
+    unsigned int byte, shift;
+    unsigned char bit_cmp;
+
+    block_read(sb.inode_bitmap_start, buf);
+    for(byte = 0; byte < BLOCK_SIZE; byte++) {
+        bit_cmp = 1;
+        for(shift = 0; shift <= 7; shift++) {
+            if((bit_cmp & buf[byte]) == 0) {
+                buf[byte] |= bit_cmp;
+                goto find;
+            }
+            bit_cmp = bit_cmp << 1;
+        }
+    }
+    printf("inode_alloc: no bit left\n");
+    while(1);
+find:
+    block_write(sb.inode_bitmap_start, buf);
+    return (unsigned short)(byte * 8 + shift);
+}
+
+// 赋值并写一个inode
+void inode_create(inode_disk_t* inode, unsigned int inode_num, unsigned short type)
+{
+    inode->type = xshort(type);
+    inode->major = xshort(0);
+    inode->minor = xshort(0);
+    inode->nlink = xshort(1);
+    inode->size = xint(0);
+    for(int i = 0; i < 13; i++)
+        inode->addrs[i] = 0;
+    inode_write(inode_num, inode);
 }
 
 int main(int argc, char* argv[])
@@ -121,6 +229,34 @@ int main(int argc, char* argv[])
     // 填写 super block
     memmove(buf, &sb, sizeof(sb));
     block_write(0, buf);
+
+    // 准备根目录
+    inode_disk_t rooti;
+    unsigned short root_inum = inode_alloc();
+    if(root_inum != 0) {
+        printf("rooti = %d\n", root_inum);
+        while(1);
+    }
+    inode_create(&rooti, root_inum, FT_DIR);
+
+    // 准备 . 和 ..
+    memset(buf, 0, BLOCK_SIZE);
+    dirent_t* de;
+    de = (dirent_t*)buf;
+    de->inode_num = xshort(root_inum);
+    strcpy(de->name, ".");
+    de = (dirent_t*)(buf + sizeof(dirent_t));
+    de->inode_num = xshort(root_inum);
+    strcpy(de->name, "..");
+
+    // 向根目录里写入
+    unsigned int rooti_block = block_alloc();
+    block_write(rooti_block, buf);
+
+    // 更新rooti
+    rooti.addrs[0] = xint(rooti_block);
+    rooti.size = xint(sizeof(dirent_t) * 2);
+    inode_write(root_inum, &rooti);
 
     return 0;
 }

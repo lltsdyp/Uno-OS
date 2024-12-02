@@ -90,8 +90,9 @@ uint32 bitmap_alloc_inode()
 }
 
 // bitmap_free_inode
-void bitmap_free_inode(uint32 inode_num)
+void bitmap_free_inode(uint16 inode_num)
 {
+    // CHECK!
     // 在 inode 位图中释放指定的 inode
     bitmap_unset(sb.inode_bitmap_start, inode_num);
 }

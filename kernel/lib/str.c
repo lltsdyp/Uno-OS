@@ -31,3 +31,12 @@ int strncmp(const char *p, const char *q, uint32 n)
       return 0;
     return (uint8)*p - (uint8)*q;
 }
+
+uint64 strlen(const char *s)
+{
+    uint64 i = 0;
+    while(s[i] != '\0')
+        i++;
+    return i;
+}
+
