@@ -5,59 +5,18 @@
 #include <fcntl.h>
 #include <assert.h>
 
+#include "fs/dinode.h"
+#include "fs/fs.h"
+
 // disk layout: [ super block | inode bitmap | inode blocks | data bitmap | data blocks ]
 
-#define FS_MAGIC 0x12345678
+int fsfd;
+super_block_t sb;
 
-typedef struct super_block {
-    unsigned int magic;
-    unsigned int block_size;
-
-    unsigned int inode_bitmap_start;
-    unsigned int inode_start;
-    unsigned int data_bitmap_start;
-    unsigned int data_start;
-
-    unsigned int inode_blocks;
-    unsigned int data_blocks;
-    unsigned int total_blocks;
-} super_block_t;
-
-// inode 64 byte
-typedef struct inode_disk {
-    short type;
-    short major;
-    short minor;
-    short nlink;
-    unsigned int size;
-    unsigned int addrs[13];
-} inode_disk_t;
-
-// direntory entry 32 byte
-typedef struct dirent {
-    unsigned short inode_num;
-    char name[30];
-} dirent_t;
-
-// 文件类型
-#define FT_UNUSED 0
-#define FT_DIR    1
-#define FT_FILE   2
-#define FT_DEVICE 3 
-
-// 常量定义 
 #define BLOCK_SIZE       1024
 #define N_DATA_BLOCK     8192 // 1个block的bitmap管理的极限
 #define N_INODE_BLOCK    128  // 支持1024个文件
 #define N_BLOCK          (N_DATA_BLOCK + N_INODE_BLOCK + 3)  // 五个部分组合起来
-#define INODE_PER_BLOCK  (BLOCK_SIZE / sizeof(inode_disk_t)) // 每个block里的inode数量
-#define N_INODE          (N_INODE_BLOCK * INODE_PER_BLOCK)   // inode总数
-
-// 确定inode所在的inode block序号
-#define INODE_LOCATE_BLOCK(inum, sb)  ((inum) / INODE_PER_BLOCK + sb.inode_start)
-
-int fsfd;
-super_block_t sb;
 
 // 大小端转换
 unsigned short xshort(unsigned short x)
