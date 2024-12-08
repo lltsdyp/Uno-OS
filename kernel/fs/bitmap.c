@@ -83,10 +83,10 @@ void bitmap_free_block(uint32 block_num)
 }
 
 // bitmap_alloc_inode
-uint32 bitmap_alloc_inode()
+uint16 bitmap_alloc_inode()
 {
     // 在 inode 位图中查找并分配一个空闲 inode
-    return (uint32)bitmap_search_and_set(sb.inode_bitmap_start);
+    return (uint16)bitmap_search_and_set(sb.inode_bitmap_start);
 }
 
 // bitmap_free_inode

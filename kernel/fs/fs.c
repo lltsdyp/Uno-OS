@@ -7,9 +7,6 @@
 // 超级块在内存的副本
 super_block_t sb;
 
-#define FS_MAGIC 0x12345678
-#define SB_BLOCK_NUM 0
-
 // 输出super_block的信息
 static void sb_print()
 {

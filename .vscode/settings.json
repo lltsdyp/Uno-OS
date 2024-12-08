@@ -40,6 +40,9 @@
         "type.h": "c",
         "syscall_num.h": "c",
         "cstdlib": "c",
-        "thread": "c"
+        "thread": "c",
+        "bitmap.h": "c",
+        "inode.h": "c",
+        "fs.h": "c"
     }
 }
