@@ -321,6 +321,7 @@ void bitmap_print(uint32 bitmap_block_num)
             printf("Bit %d is alloced\n", i);
             
     }
+    printf("\n");
     buf_release(buf);
 }
 ```

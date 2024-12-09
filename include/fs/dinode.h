@@ -26,7 +26,7 @@ typedef struct inode_disk {
 // 常量定义 
 #define INODE_DISK_SIZE  sizeof(inode_disk_t) // 磁盘中inode的大小
 #define INODE_PER_BLOCK  (BLOCK_SIZE / sizeof(inode_disk_t)) // 每个block里的inode数量
-#define N_INODE          (N_INODE_BLOCK * INODE_PER_BLOCK)   // inode总数
+// #define N_INODE          (N_INODE_BLOCK * INODE_PER_BLOCK)   // inode总数
 
 // 确定inode所在的inode block序号
 #define INODE_LOCATE_BLOCK(inum, sb)  ((inum) / INODE_PER_BLOCK + sb.inode_start)

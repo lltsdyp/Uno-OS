@@ -539,7 +539,15 @@ int main()
 
 #elif defined LAB_8_CASE_1
 
-
+#include "sys.h"
+#include "type.h"
+int main()
+{
+    syscall(SYS_print,"Jump to initcode.\n");
+    
+    while(1);
+    return 0;
+}
 
 #else
 

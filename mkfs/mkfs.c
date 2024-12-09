@@ -215,6 +215,7 @@ int main(int argc, char* argv[])
 
     // 更新rooti
     rooti.addrs[0] = xint(rooti_block);
+    rooti.type=xshort(FT_DIR);
     rooti.size = xint(sizeof(dirent_t) * 2);
     inode_write(root_inum, &rooti);
 

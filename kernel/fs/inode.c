@@ -12,15 +12,15 @@
 extern super_block_t sb;
 
 // 内存中的inode资源 + 保护它的锁
-#define N_INODE 32
-static inode_t icache[N_INODE];
+#define I_NODE_CACHE_SIZE 32
+static inode_t icache[I_NODE_CACHE_SIZE];
 static spinlock_t lk_icache;
 
 // icache初始化
 void inode_init()
 {
     spinlock_init(&lk_icache,"icache lock");
-    for(int i=0;i<N_INODE; i++)
+    for(int i=0;i<I_NODE_CACHE_SIZE; i++)
     {
         icache[i].inode_num=INODE_NUM_UNUSED;
         sleeplock_init(&(icache[i].slk),"inode lock");
@@ -61,7 +61,7 @@ inode_t* inode_get(uint16 inode_num)
     inode_t *empty_inode=NULL;
 
     spinlock_acquire(&lk_icache);
-    for(int i=0;i<N_INODE;++i)
+    for(int i=0;i<I_NODE_CACHE_SIZE;++i)
     {
         // 找到的情况
         if(icache[i].inode_num==inode_num && icache[i].inode_num>0){
@@ -169,6 +169,8 @@ void inode_lock(inode_t* ip)
 
     assert(ip&&ip->ref>=1,"ilock: invalid inode or ref=0");
 
+    sleeplock_acquire(&(ip->slk));
+
     if(!ip->valid)
     {
         inode_rw(ip,false);
@@ -222,10 +224,19 @@ static uint32 locate_block(uint32* entry, uint32 bn, uint32 size)
 // 由于inode->addrs的结构, 这个过程比较复杂, 需要单独处理
 static uint32 inode_locate_block(inode_t* ip, uint32 bn)
 {
+    // 如果确保该函数只会被inode_write_data调用，那么下面这行可以删去
+    assert(sleeplock_holding(&(ip->slk)),"inode_locate_block: not holding slk");
+
+    uint32 *result=NULL;
     // 直接
     if(bn<N_ADDRS_1)
     {
-        return ip->disk_inode.addrs[bn];
+        result = &(ip->disk_inode.addrs[bn]);
+        if(*result==0)
+        {
+            *result = bitmap_alloc_block();
+            assert(*result!=-1,"inode_locate_block: bitmap_alloc_block failed");
+        }
     }
     // 一级间接
     else if(bn<N_ADDRS_1+N_ADDRS_2*ENTRY_PER_BLOCK)
@@ -234,7 +245,7 @@ static uint32 inode_locate_block(inode_t* ip, uint32 bn)
         int index1=(bn-N_ADDRS_1)/ENTRY_PER_BLOCK;
         // 二级表项
         unsigned int *table1=&(ip->disk_inode.addrs[N_ADDRS_1+index1]);
-        return table1[(bn-N_ADDRS_1)%ENTRY_PER_BLOCK];
+        result = table1[(bn-N_ADDRS_1)%ENTRY_PER_BLOCK];
     }
     // 二级间接
     else if(bn<N_ADDRS_1 + N_ADDRS_2 * ENTRY_PER_BLOCK + N_ADDRS_3 * ENTRY_PER_BLOCK * ENTRY_PER_BLOCK)
@@ -245,11 +256,19 @@ static uint32 inode_locate_block(inode_t* ip, uint32 bn)
         int index1=(bn-N_ADDRS_1-N_ADDRS_2*ENTRY_PER_BLOCK)/ENTRY_PER_BLOCK;
         unsigned int *table2=&table1[index1];
         int index2=(bn-N_ADDRS_1-N_ADDRS_2*ENTRY_PER_BLOCK)%ENTRY_PER_BLOCK;
-        return table2[index2];
+        result = table2[index2];
     }
     else{
         panic("inode_locate_block: invalid block number");
     }
+
+    // 更新size，只有这个函数会为inode分配新的block，因此更新逻辑放在此处
+    if(ip->disk_inode.size<(bn+1)*BLOCK_SIZE)
+    {
+        ip->disk_inode.size=(bn+1)*BLOCK_SIZE;
+        inode_rw(ip,true);
+    }
+    return *result;
 }
 
 // 读取 inode 管理的 data block
@@ -262,8 +281,10 @@ uint32 inode_read_data(inode_t* ip, uint32 offset, uint32 len, void* dst, bool u
     uint32 count=0;
     uint32 total=len;
 
+    inode_rw(ip,false);
+
     if(offset > ip->disk_inode.size || offset + len < offset)
-        return 0;
+        return -1;
     if(len>ip->disk_inode.size-offset)
         total=ip->disk_inode.size-offset;
     
@@ -303,7 +324,7 @@ uint32 inode_write_data(inode_t* ip, uint32 offset, uint32 len, void* src, bool 
 
     uint32 count=0;
 
-    if(offset > ip->disk_inode.size || offset + len < offset)
+    if(offset + len < offset)
         return -1;
     if(offset + len > BLOCK_SIZE*N_ADDRS)
         return -1;
@@ -327,11 +348,13 @@ uint32 inode_write_data(inode_t* ip, uint32 offset, uint32 len, void* src, bool 
             memcpy((void *)(b->data+beg%BLOCK_SIZE), (void *)src_by_byte, writesize);
 
         buf_write(b);
+        buf_release(b);
 
         beg+=writesize;
         count+=writesize;
         src_by_byte+=writesize;
     }
+    return count;
 }
 
 // 辅助 inode_free_data 做递归释放
@@ -415,5 +438,5 @@ void inode_print(inode_t* ip)
     printf("size = %d, addrs =", ip->disk_inode.size);
     for(int i = 0; i < N_ADDRS; i++)
         printf(" %d", ip->disk_inode.addrs[i]);
-    printf("\n");
+    printf("\n\n");
 }
