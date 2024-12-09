@@ -4,13 +4,24 @@
 #include "lib/print.h"
 #include "lib/str.h"
 
-#define N_BLOCK_BUF 64
+#define N_BLOCK_BUF 512
 #define BLOCK_NUM_UNUSED 0xFFFFFFFF
 
 // buf cache
 static buf_t buf_cache[N_BLOCK_BUF];
 static buf_t head_buf; // ->next 已分配 ->prev 可分配
 static spinlock_t lk_buf_cache; // 这个锁负责保护 链式结构 + buf_ref + block_num
+
+// 调试用，检查是否有buf 未释放
+void get_free_buf()
+{
+    int count=1;
+    for(buf_t *node=head_buf.prev;node->buf_ref==0&&node!=&head_buf;node=node->prev)
+    {
+        ++count;
+    }
+    printf("free buf:%d",count);
+}
 
 // 链表操作
 static void insert_head(buf_t* buf_node, bool head_next)
@@ -57,6 +68,7 @@ void buf_init()
 */
 buf_t* buf_read(uint32 block_num)
 {
+    // printf("buf_read: buf %d allocated\n",block_num);
     buf_t *target=NULL,*buf_node=head_buf.prev,*oldest_node=NULL;
     spinlock_acquire(&lk_buf_cache);
 
@@ -111,6 +123,7 @@ void buf_write(buf_t* buf)
 // buf 释放
 void buf_release(buf_t* buf)
 {
+    // printf("buf_release: buf %d released\n", buf->block_num);
     assert(sleeplock_holding(&(buf->slk)),"buf_release: buf is not locked");
     sleeplock_release(&(buf->slk));
 

@@ -28,5 +28,6 @@ buf_t* buf_read(uint32 block_num);
 void   buf_write(buf_t* buf);
 void   buf_release(buf_t* buf);
 void   buf_print();
+void   get_free_buf();
 
 #endif

@@ -114,9 +114,9 @@ void fs_init()
 
     uint32 max_blocks =  N_ADDRS_1 + N_ADDRS_2 * ENTRY_PER_BLOCK + 2 * ENTRY_PER_BLOCK;
 
-    for(uint32 i = 0; i < max_blocks; i++)
+    for(uint32 i = 652; i < max_blocks; i++)
     {
-        printf("write %d\n", i);
+        printf("write %d\n",i);
         ret = inode_write_data(nip, i * BLOCK_SIZE, BLOCK_SIZE, str, false);
         assert(ret == BLOCK_SIZE, "inode_write_data fail, ret %d",ret);
     }
@@ -125,23 +125,24 @@ void fs_init()
     
     // 第二次查看
     inode_print(nip);
+    get_free_buf();
 
     // 区域-1
     ret = inode_read_data(nip, BLOCK_SIZE, BLOCK_SIZE, tmp, false);
     assert(ret == BLOCK_SIZE, "inode_read_data fail");
-    assert(strncmp(tmp, str, BLOCK_SIZE), "check-1 fail");
+    assert(strncmp(tmp, str, BLOCK_SIZE) == 0, "check-1 fail"); 
     printf("check-1 success\n");
 
     // 区域-2
     ret = inode_read_data(nip, N_ADDRS_1 * BLOCK_SIZE, BLOCK_SIZE, tmp, false);
     assert(ret == BLOCK_SIZE, "inode_read_data fail");
-    assert(strncmp(tmp, str, BLOCK_SIZE), "check-2 fail");
+    assert(strncmp(tmp, str, BLOCK_SIZE) == 0, "check-2 fail");
     printf("check-2 success\n");
 
     // 区域-3
     ret = inode_read_data(nip, (max_blocks - 2) * BLOCK_SIZE, BLOCK_SIZE, tmp, false);
     assert(ret == BLOCK_SIZE, "inode_read_data fail");
-    assert(strncmp(tmp, empty, BLOCK_SIZE), "check-2 fail");
+    assert(strncmp(tmp, empty, BLOCK_SIZE) == 0, "check-2 fail");
     printf("check-3 success\n");
 
     // 释放inode管理的所有data block

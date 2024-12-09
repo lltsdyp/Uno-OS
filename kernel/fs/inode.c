@@ -165,7 +165,6 @@ inode_t* inode_dup(inode_t* ip)
 void inode_lock(inode_t* ip)
 {
     buf_t *b=NULL;
-    inode_disk_t *disk_inode=NULL;
 
     assert(ip&&ip->ref>=1,"ilock: invalid inode or ref=0");
 
@@ -227,64 +226,122 @@ static uint32 inode_locate_block(inode_t* ip, uint32 bn)
     // 如果确保该函数只会被inode_write_data调用，那么下面这行可以删去
     assert(sleeplock_holding(&(ip->slk)),"inode_locate_block: not holding slk");
 
-    uint32 *result=NULL;
+    uint32 result=0;
     // 直接
     if(bn<N_ADDRS_1)
     {
-        result = &(ip->disk_inode.addrs[bn]);
+        result = ip->disk_inode.addrs[bn];
+        if(result==0)
+        {
+            result = bitmap_alloc_block();
+            assert(result!=-1,"inode_locate_block: bitmap_alloc_block failed");
+            ip->disk_inode.addrs[bn] = result;
+        }
     }
     // 一级间接
     else if(bn<N_ADDRS_1+N_ADDRS_2*ENTRY_PER_BLOCK)
     {
         // 计算出位于哪个一级间接块
-        int index1=(bn-N_ADDRS_1)/ENTRY_PER_BLOCK;
-        // 二级表项
-        unsigned int *table1=&(ip->disk_inode.addrs[N_ADDRS_1+index1]);
-        if(*table1==0)
+        int index1=(bn-N_ADDRS_1)/ENTRY_PER_BLOCK+N_ADDRS_1;
+
+        // 第一次寻址
+        uint32 sub_block1=ip->disk_inode.addrs[index1];
+        if(sub_block1==0)
         {
-            *table1 = bitmap_alloc_block();
-            assert(*table1!=-1,"inode_locate_block: bitmap_alloc_block failed");
+            sub_block1=bitmap_alloc_block();
+            assert(sub_block1!=0, "inode_locate_block: bitmap_alloc_block failed");
+            ip->disk_inode.addrs[index1]=sub_block1;
         }
-        result = &table1[(bn-N_ADDRS_1)%ENTRY_PER_BLOCK];
+
+        // 第二次寻址
+        int index2=(bn-N_ADDRS_1)%ENTRY_PER_BLOCK;
+        buf_t *sub_table1=buf_read(sub_block1);
+        result=sub_table1->data[index2];
+        if(result==0)
+        {
+            result=bitmap_alloc_block();
+            assert(result!=0, "inode_locate_block: bitmap_alloc_block failed");
+            sub_table1->data[index2]=result;
+        }
+        buf_write(sub_table1);
+        buf_release(sub_table1);
     }
     // 二级间接
     else if(bn<N_ADDRS_1 + N_ADDRS_2 * ENTRY_PER_BLOCK + N_ADDRS_3 * ENTRY_PER_BLOCK * ENTRY_PER_BLOCK)
     {
-        // 第一次重定向
-        // 由于当前只有一个二级间接项，我们不需要向上一种情况一样计算顶层表项的位置，直接访问顶层二级间接项即可
-        unsigned int *table1=&(ip->disk_inode.addrs[N_ADDRS_1 + N_ADDRS_2]);
-        if(*table1==0)
+        // // 第一次重定向
+        // // 由于当前只有一个二级间接项，我们不需要向上一种情况一样计算顶层表项的位置，直接访问顶层二级间接项即可
+        // unsigned int *table1=&(ip->disk_inode.addrs[N_ADDRS_1 + N_ADDRS_2]);
+        // if(*table1==0)
+        // {
+        //     *table1 = bitmap_alloc_block();
+        //     assert(*table1!=-1,"inode_locate_block: bitmap_alloc_block failed");
+        //     memset((void *)table1,0,BLOCK_SIZE);
+        // }
+
+        // int index1=(bn-N_ADDRS_1-N_ADDRS_2*ENTRY_PER_BLOCK)/ENTRY_PER_BLOCK;
+        // unsigned int *table2=&table1[index1];
+        // if(*table2==0)
+        // {
+        //     *table2 = bitmap_alloc_block();
+        //     assert(*table2!=-1,"inode_locate_block: bitmap_alloc_block failed");
+        //     memset((void *)table2,0,BLOCK_SIZE);
+        // }
+        // int index2=(bn-N_ADDRS_1-N_ADDRS_2*ENTRY_PER_BLOCK)%ENTRY_PER_BLOCK;
+        // result = &table2[index2];
+
+        // 计算出位于哪个三级间接块
+        int index1=(bn-N_ADDRS_1-ENTRY_PER_BLOCK*N_ADDRS_2)/
+            ENTRY_PER_BLOCK*ENTRY_PER_BLOCK+N_ADDRS_1+N_ADDRS_2;
+            
+        // 第一次寻址
+        uint32 sub_block1=ip->disk_inode.addrs[index1];
+        if(sub_block1==0)
         {
-            *table1 = bitmap_alloc_block();
-            assert(*table1!=-1,"inode_locate_block: bitmap_alloc_block failed");
+            sub_block1=bitmap_alloc_block();
+            assert(sub_block1!=0, "inode_locate_block: bitmap_alloc_block failed");
+            ip->disk_inode.addrs[index1]=sub_block1;
         }
 
-        int index1=(bn-N_ADDRS_1-N_ADDRS_2*ENTRY_PER_BLOCK)/ENTRY_PER_BLOCK;
-        unsigned int *table2=&table1[index1];
-        if(*table2==0)
+        // 第二次寻址
+        int index2=(bn-N_ADDRS_1-ENTRY_PER_BLOCK*N_ADDRS_2)/
+            ENTRY_PER_BLOCK;
+        uint32 sub_block2=0;
+        buf_t *sub_table1=buf_read(sub_block1);
+        sub_block2=sub_table1->data[index2];
+        if(sub_block2==0)
         {
-            *table2 = bitmap_alloc_block();
-            assert(*table2!=-1,"inode_locate_block: bitmap_alloc_block failed");
+            sub_block2=bitmap_alloc_block();
+            assert(sub_block2!=0,"inode_locate_block: alloc block failed");
+            sub_table1->data[index2]=sub_block2;
         }
-        int index2=(bn-N_ADDRS_1-N_ADDRS_2*ENTRY_PER_BLOCK)%ENTRY_PER_BLOCK;
-        result = &table2[index2];
+        buf_write(sub_table1);
+        buf_release(sub_table1);
+
+        int index3=(bn-N_ADDRS_1-ENTRY_PER_BLOCK*N_ADDRS_2)%ENTRY_PER_BLOCK;
+        buf_t* sub_table2=buf_read(sub_block2);
+        result=sub_table2->data[index3];
+        if(result==0)
+        {
+            result=bitmap_alloc_block();
+            assert(result!=0, "inode_locate_block: bitmap_alloc_block failed");
+            sub_table2->data[index3]=result;
+        }
+        buf_write(sub_table2);
+        buf_release(sub_table2);
+
     }
     else{
         panic("inode_locate_block: invalid block number");
     }
 
-    if(*result==0)
-    {
-        *result = bitmap_alloc_block();
-        assert(*result!=-1,"inode_locate_block: bitmap_alloc_block failed");
-    }
     // 更新size，只有这个函数会为inode分配新的block，因此更新逻辑放在此处
     if(ip->disk_inode.size<(bn+1)*BLOCK_SIZE)
     {
         ip->disk_inode.size=(bn+1)*BLOCK_SIZE;
         inode_rw(ip,true);
     }
-    return *result;
+    return result;
 }
 
 // 读取 inode 管理的 data block
@@ -351,7 +408,6 @@ uint32 inode_write_data(inode_t* ip, uint32 offset, uint32 len, void* src, bool 
     while(count<len)
     {
         buf_t *b=buf_read(inode_locate_block(ip,beg/BLOCK_SIZE));
-
         uint32 writesize=BLOCK_SIZE-beg%BLOCK_SIZE;
         if(writesize>len-count)
         {

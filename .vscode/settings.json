@@ -43,6 +43,7 @@
         "thread": "c",
         "bitmap.h": "c",
         "inode.h": "c",
-        "fs.h": "c"
+        "fs.h": "c",
+        "buf.h": "c"
     }
 }

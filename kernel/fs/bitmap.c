@@ -41,7 +41,7 @@ static uint32 bitmap_search_and_set(uint32 bitmap_block)
     }
 
     // 如果没有找到空闲块，抛出异常
-    panic("bitmap_search_and_set: out of blocks");
+    buf_release(bp);
     return -1;
 }
 
