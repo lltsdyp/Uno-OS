@@ -247,6 +247,9 @@ static uint32 inode_locate_block(inode_t* ip, uint32 bn)
         int index2=(bn-N_ADDRS_1-N_ADDRS_2*ENTRY_PER_BLOCK)%ENTRY_PER_BLOCK;
         return table2[index2];
     }
+    else{
+        panic("inode_locate_block: invalid block number");
+    }
 }
 
 // 读取 inode 管理的 data block
@@ -256,6 +259,39 @@ uint32 inode_read_data(inode_t* ip, uint32 offset, uint32 len, void* dst, bool u
 {
     assert(sleeplock_holding(&(ip->slk)),"inode_read_data: not holding slk");
 
+    uint32 count=0;
+    uint32 total=len;
+
+    if(offset > ip->size || offset + len < offset)
+        return 0;
+    if(len>ip->size-offset)
+        total=ip->size-offset;
+    
+    uint32 beg=offset;
+    char *dst_by_byte=(char *)dst;
+    
+    while(count<total)
+    {
+        buf_t *b=buf_read(inode_locate_block(ip,beg/BLOCK_SIZE));
+        
+        // 确认本次读写的大小
+        uint32 readsize=BLOCK_SIZE-beg%BLOCK_SIZE;
+        if(readsize>total-count)
+            readsize=total-count;
+
+        if(user)
+            uvm_copyout(myproc()->pgtbl,(uint64)dst_by_byte,
+                    (void *)(b->data+beg%BLOCK_SIZE),readsize);
+        else
+            memcpy((void *)dst_by_byte,(void *)(b->data+beg%BLOCK_SIZE),readsize);
+
+        buf_release(b);
+        
+        count+=readsize;
+        beg+=readsize;
+        dst_by_byte+=readsize;
+    }
+    return count;
 }
 
 // 写入 inode 管理的 data block (可能导致管理的 block 增加)
@@ -264,6 +300,38 @@ uint32 inode_read_data(inode_t* ip, uint32 offset, uint32 len, void* dst, bool u
 uint32 inode_write_data(inode_t* ip, uint32 offset, uint32 len, void* src, bool user)
 {
     assert(sleeplock_holding(&(ip->slk)),"inode_write_data: not holding slk");
+
+    uint32 count=0;
+
+    if(offset > ip->size || offset + len < offset)
+        return -1;
+    if(offset + len > BLOCK_SIZE*N_ADDRS)
+        return -1;
+    
+    uint32 beg=offset;
+    char *src_by_byte=(char *)src;
+
+    while(count<len)
+    {
+        buf_t *b=buf_read(inode_locate_block(ip,beg/BLOCK_SIZE));
+
+        uint32 writesize=BLOCK_SIZE-beg%BLOCK_SIZE;
+        if(writesize>len-count)
+        {
+            writesize=len-count;
+        }
+
+        if(user)
+            uvm_copyin(myproc()->pgtbl,(uint64)b->data+beg%BLOCK_SIZE, (uint64)src_by_byte, writesize);
+        else
+            memmove((void *)(b->data+beg%BLOCK_SIZE), (void *)src_by_byte, writesize);
+
+        buf_write(b);
+
+        beg+=writesize;
+        count+=writesize;
+        src_by_byte+=writesize;
+    }
 }
 
 // 辅助 inode_free_data 做递归释放
