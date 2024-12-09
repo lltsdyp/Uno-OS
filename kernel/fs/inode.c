@@ -232,11 +232,6 @@ static uint32 inode_locate_block(inode_t* ip, uint32 bn)
     if(bn<N_ADDRS_1)
     {
         result = &(ip->disk_inode.addrs[bn]);
-        if(*result==0)
-        {
-            *result = bitmap_alloc_block();
-            assert(*result!=-1,"inode_locate_block: bitmap_alloc_block failed");
-        }
     }
     // 一级间接
     else if(bn<N_ADDRS_1+N_ADDRS_2*ENTRY_PER_BLOCK)
@@ -245,7 +240,12 @@ static uint32 inode_locate_block(inode_t* ip, uint32 bn)
         int index1=(bn-N_ADDRS_1)/ENTRY_PER_BLOCK;
         // 二级表项
         unsigned int *table1=&(ip->disk_inode.addrs[N_ADDRS_1+index1]);
-        result = table1[(bn-N_ADDRS_1)%ENTRY_PER_BLOCK];
+        if(*table1==0)
+        {
+            *table1 = bitmap_alloc_block();
+            assert(*table1!=-1,"inode_locate_block: bitmap_alloc_block failed");
+        }
+        result = &table1[(bn-N_ADDRS_1)%ENTRY_PER_BLOCK];
     }
     // 二级间接
     else if(bn<N_ADDRS_1 + N_ADDRS_2 * ENTRY_PER_BLOCK + N_ADDRS_3 * ENTRY_PER_BLOCK * ENTRY_PER_BLOCK)
@@ -253,15 +253,31 @@ static uint32 inode_locate_block(inode_t* ip, uint32 bn)
         // 第一次重定向
         // 由于当前只有一个二级间接项，我们不需要向上一种情况一样计算顶层表项的位置，直接访问顶层二级间接项即可
         unsigned int *table1=&(ip->disk_inode.addrs[N_ADDRS_1 + N_ADDRS_2]);
+        if(*table1==0)
+        {
+            *table1 = bitmap_alloc_block();
+            assert(*table1!=-1,"inode_locate_block: bitmap_alloc_block failed");
+        }
+
         int index1=(bn-N_ADDRS_1-N_ADDRS_2*ENTRY_PER_BLOCK)/ENTRY_PER_BLOCK;
         unsigned int *table2=&table1[index1];
+        if(*table2==0)
+        {
+            *table2 = bitmap_alloc_block();
+            assert(*table2!=-1,"inode_locate_block: bitmap_alloc_block failed");
+        }
         int index2=(bn-N_ADDRS_1-N_ADDRS_2*ENTRY_PER_BLOCK)%ENTRY_PER_BLOCK;
-        result = table2[index2];
+        result = &table2[index2];
     }
     else{
         panic("inode_locate_block: invalid block number");
     }
 
+    if(*result==0)
+    {
+        *result = bitmap_alloc_block();
+        assert(*result!=-1,"inode_locate_block: bitmap_alloc_block failed");
+    }
     // 更新size，只有这个函数会为inode分配新的block，因此更新逻辑放在此处
     if(ip->disk_inode.size<(bn+1)*BLOCK_SIZE)
     {
@@ -326,7 +342,7 @@ uint32 inode_write_data(inode_t* ip, uint32 offset, uint32 len, void* src, bool 
 
     if(offset + len < offset)
         return -1;
-    if(offset + len > BLOCK_SIZE*N_ADDRS)
+    if(offset + len > MAX_FILE_SIZE)
         return -1;
     
     uint32 beg=offset;

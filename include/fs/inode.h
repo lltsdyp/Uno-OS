@@ -11,7 +11,7 @@
 
 // addrs字段可以容纳的最大空间（单个inode可以管理的最大空间）
 // 由于磁盘大小限制, 事实上达不到这个大小
-#define INODE_MAXSIZE ((N_ADDRS_1 + N_ADDRS_2 * ENTRY_PER_BLOCK + N_ADDRS_3 * ENTRY_PER_BLOCK * ENTRY_PER_BLOCK) * BLOCK_SIZE)
+#define MAX_FILE_SIZE ((N_ADDRS_1 + N_ADDRS_2 * ENTRY_PER_BLOCK + N_ADDRS_3 * ENTRY_PER_BLOCK * ENTRY_PER_BLOCK) * BLOCK_SIZE)
 
 // inode_num 无效的inode号
 #define INODE_NUM_UNUSED 0xFFFF
