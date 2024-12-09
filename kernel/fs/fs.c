@@ -3,6 +3,7 @@
 #include "fs/bitmap.h"
 #include "lib/str.h"
 #include "lib/print.h"
+#include "fs/inode.h"
 
 // 超级块在内存的副本
 super_block_t sb;
@@ -26,6 +27,7 @@ static void sb_print()
 void fs_init()
 {
     buf_init();
+    inode_init();
 
     buf_t* buf = buf_read(SB_BLOCK_NUM);
     memcpy(&sb, buf->data, sizeof(sb));

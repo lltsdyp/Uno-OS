@@ -7,8 +7,6 @@
 #define N_ADDRS_3   1   // 管理 (BLOCK_SIZE / 4) * (BLOCK_SIZE / 4) * BLOCK_SIZE = 64MB
 #define N_ADDRS     (N_ADDRS_1 + N_ADDRS_2 + N_ADDRS_3)
 
-#define NAME_MAX_LEN 30
-
 // inode 64 byte
 typedef struct inode_disk {
     short type; // inode 管理的文件类型
@@ -18,12 +16,6 @@ typedef struct inode_disk {
     unsigned int size; // 文件大小 (字节)
     unsigned int addrs[N_ADDRS]; // 文件存储在哪些block里 (分为一级 二级 三级)
 } inode_disk_t;
-
-// directory entry 32 byte
-typedef struct dirent {
-    unsigned short inode_num;
-    char name[NAME_MAX_LEN];
-} dirent_t;
 
 // 文件类型
 #define FT_UNUSED 0

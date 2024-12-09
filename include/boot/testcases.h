@@ -537,6 +537,10 @@ int main()
     return 0;
 }
 
+#elif defined LAB_8_CASE_1
+
+
+
 #else
 
 #error "No pre-defined macro. Can not decide what to test or run"

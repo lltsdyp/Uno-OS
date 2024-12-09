@@ -47,7 +47,7 @@ void dir_print(inode_t *pip)
     printf("\ninode_num = %d dirents:\n", pip->inode_num);
 
     dirent_t *de;
-    buf_t *buf = buf_read(pip->addrs[0]);
+    buf_t *buf = buf_read(pip->disk_inode.addrs[0]);
     for (uint32 offset = 0; offset < BLOCK_SIZE; offset += sizeof(dirent_t))
     {
         de = (dirent_t *)(buf->data + offset);
@@ -75,9 +75,9 @@ static char *skip_element(char *path, char *name)
 
     int len = path - s;
     if (len >= DIR_NAME_LEN) {
-        memmove(name, s, DIR_NAME_LEN);
+        memcpy(name, s, DIR_NAME_LEN);
     } else {
-        memmove(name, s, len);
+        memcpy(name, s, len);
         name[len] = 0;
     }
     while (*path == '/')

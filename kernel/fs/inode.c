@@ -65,7 +65,7 @@ inode_t* inode_get(uint16 inode_num)
     {
         // 找到的情况
         if(icache[i].inode_num==inode_num && icache[i].inode_num>0){
-            ++(ip->ref);
+            ++(icache[i].ref);
             spinlock_release(&lk_icache);
             return &icache[i];
         }
@@ -99,7 +99,7 @@ inode_t* inode_create(uint16 type, uint16 major, uint16 minor)
 
     uint16 inode_num=bitmap_alloc_inode();
     b=buf_read(INODE_LOCATE_BLOCK(inode_num,sb));
-    disk_inode=(inode_disk_t*)(b->data)+i%INODE_PER_BLOCK;
+    disk_inode=(inode_disk_t*)(b->data)+inode_num%INODE_PER_BLOCK;
 
     memset(disk_inode,0,INODE_DISK_SIZE);
     disk_inode->type=type;
@@ -131,7 +131,7 @@ void inode_free(inode_t* ip)
     assert(!sleeplock_holding(&(ip->slk)),"inode_free: unexpectedly hold sleeplock");
     spinlock_acquire(&lk_icache);
 
-    if(ip->ref==1&&ip->valid&&ip->nlink==0)
+    if(ip->ref==1&&ip->valid&&ip->disk_inode.nlink==0)
     {
         // 释放掉当前文件
 
@@ -139,8 +139,8 @@ void inode_free(inode_t* ip)
         spinlock_release(&lk_icache);
 
         inode_destroy(ip);
-        ip->type=FT_UNUSED;
-        inode_rw(ip,true)
+        ip->disk_inode.type=FT_UNUSED;
+        inode_rw(ip,true);
         ip->valid=0;
 
         sleeplock_release(&(ip->slk));
@@ -173,7 +173,7 @@ void inode_lock(inode_t* ip)
     {
         inode_rw(ip,false);
         ip->valid=true;
-        assert(ip->type==FT_DIR || ip->type==FT_FILE || ip->type==FT_DEVICE,"inode_lock: invalid or reserved type id:%d",ip->type);
+        assert(ip->disk_inode.type==FT_DIR || ip->disk_inode.type==FT_FILE || ip->disk_inode.type==FT_DEVICE,"inode_lock: invalid or reserved type id:%d",ip->disk_inode.type);
     }
 }
 
@@ -262,10 +262,10 @@ uint32 inode_read_data(inode_t* ip, uint32 offset, uint32 len, void* dst, bool u
     uint32 count=0;
     uint32 total=len;
 
-    if(offset > ip->size || offset + len < offset)
+    if(offset > ip->disk_inode.size || offset + len < offset)
         return 0;
-    if(len>ip->size-offset)
-        total=ip->size-offset;
+    if(len>ip->disk_inode.size-offset)
+        total=ip->disk_inode.size-offset;
     
     uint32 beg=offset;
     char *dst_by_byte=(char *)dst;
@@ -303,7 +303,7 @@ uint32 inode_write_data(inode_t* ip, uint32 offset, uint32 len, void* src, bool 
 
     uint32 count=0;
 
-    if(offset > ip->size || offset + len < offset)
+    if(offset > ip->disk_inode.size || offset + len < offset)
         return -1;
     if(offset + len > BLOCK_SIZE*N_ADDRS)
         return -1;
@@ -324,7 +324,7 @@ uint32 inode_write_data(inode_t* ip, uint32 offset, uint32 len, void* src, bool 
         if(user)
             uvm_copyin(myproc()->pgtbl,(uint64)b->data+beg%BLOCK_SIZE, (uint64)src_by_byte, writesize);
         else
-            memmove((void *)(b->data+beg%BLOCK_SIZE), (void *)src_by_byte, writesize);
+            memcpy((void *)(b->data+beg%BLOCK_SIZE), (void *)src_by_byte, writesize);
 
         buf_write(b);
 
@@ -353,12 +353,11 @@ static void data_free(uint32 block_num, uint32 level)
 
 ret:
     bitmap_free_block(block_num);
-    ip->disk_inode.addr[i]=0; // 感觉可以放在这里
     return;
 }
 
 // 释放inode管理的 data block
-// ip->addrs被清空 ip->size置0
+// ip->addrs被清空 ip->disk_inode.size置0
 // 调用者需要持有slk
 void inode_free_data(inode_t* ip)
 {
@@ -372,6 +371,7 @@ void inode_free_data(inode_t* ip)
         if(ip->disk_inode.addrs[i])
         {
             data_free(ip->disk_inode.addrs[i], 0);
+            ip->disk_inode.addrs[i]=0; 
         }
     }
 
@@ -381,6 +381,7 @@ void inode_free_data(inode_t* ip)
         if(ip->disk_inode.addrs[i])
         {
             data_free(ip->disk_inode.addrs[i], 1);
+            ip->disk_inode.addrs[i]=0; 
         }
     }
 
@@ -390,6 +391,7 @@ void inode_free_data(inode_t* ip)
         if(ip->disk_inode.addrs[i])
         {
             data_free(ip->disk_inode.addrs[i], 2);
+            ip->disk_inode.addrs[i]=0; 
         }
     }
 }

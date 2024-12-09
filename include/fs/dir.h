@@ -2,6 +2,7 @@
 #define __DIR_H__
 
 #include "common.h"
+#include "inode.h"
 
 #define DIR_NAME_LEN 30
 

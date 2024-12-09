@@ -6,6 +6,6 @@
 void   memset(void* begin, uint8 data, uint32 n);
 void   memcpy(void* dst, const void* src, uint32 n);
 int    strncmp(const char *p, const char *q, uint32 n);
-int    strlen(const char *str);
+uint64    strlen(const char *str);
 
 #endif

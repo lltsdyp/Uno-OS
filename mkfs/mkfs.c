@@ -7,6 +7,7 @@
 
 #include "fs/dinode.h"
 #include "fs/fs.h"
+#include "fs/dir.h"
 
 // disk layout: [ super block | inode bitmap | inode blocks | data bitmap | data blocks ]
 
@@ -143,7 +144,7 @@ find:
 }
 
 // 赋值并写一个inode
-void inode_create(inode_disk_t* inode, unsigned int inode_num, unsigned short type)
+void inode_create_mkfs(inode_disk_t* inode, unsigned int inode_num, unsigned short type)
 {
     inode->type = xshort(type);
     inode->major = xshort(0);
@@ -196,7 +197,7 @@ int main(int argc, char* argv[])
         printf("rooti = %d\n", root_inum);
         while(1);
     }
-    inode_create(&rooti, root_inum, FT_DIR);
+    inode_create_mkfs(&rooti, root_inum, FT_DIR);
 
     // 准备 . 和 ..
     memset(buf, 0, BLOCK_SIZE);
