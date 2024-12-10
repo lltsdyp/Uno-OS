@@ -199,9 +199,11 @@ void inode_unlock_free(inode_t* ip)
 // 递归查询或创建block
 static uint32 locate_block(uint32* entry, uint32 bn, uint32 size)
 {
-    if(*entry == 0)
+    if(*entry == 0){
         *entry = bitmap_alloc_block();
-
+        assert(entry!=-1,"inode_locate_block: bitmap_alloc_block failed");
+    }
+    
     if(size == 1)
         return *entry;    
 
@@ -212,8 +214,8 @@ static uint32 locate_block(uint32* entry, uint32 bn, uint32 size)
 
     buf_t* buf = buf_read(*entry);
     next_entry = (uint32*)(buf->data) + bn / next_size;
-    ret = locate_block(next_entry, next_bn, next_size);
     buf_release(buf);
+    ret = locate_block(next_entry, next_bn, next_size);
 
     return ret;
 }
@@ -256,12 +258,12 @@ static uint32 inode_locate_block(inode_t* ip, uint32 bn)
         // 第二次寻址
         int index2=(bn-N_ADDRS_1)%ENTRY_PER_BLOCK;
         buf_t *sub_table1=buf_read(sub_block1);
-        result=sub_table1->data[index2];
+        result=*((uint32*)sub_table1->data+index2);
         if(result==0)
         {
             result=bitmap_alloc_block();
             assert(result!=0, "inode_locate_block: bitmap_alloc_block failed");
-            sub_table1->data[index2]=result;
+            *((uint32*)sub_table1->data+index2)=result;
         }
         buf_write(sub_table1);
         buf_release(sub_table1);
@@ -308,24 +310,24 @@ static uint32 inode_locate_block(inode_t* ip, uint32 bn)
             ENTRY_PER_BLOCK;
         uint32 sub_block2=0;
         buf_t *sub_table1=buf_read(sub_block1);
-        sub_block2=sub_table1->data[index2];
+        sub_block2=*((uint32*)sub_table1->data+index2);
         if(sub_block2==0)
         {
             sub_block2=bitmap_alloc_block();
             assert(sub_block2!=0,"inode_locate_block: alloc block failed");
-            sub_table1->data[index2]=sub_block2;
+            *((uint32*)sub_table1->data+index2)=sub_block2;
         }
         buf_write(sub_table1);
         buf_release(sub_table1);
 
         int index3=(bn-N_ADDRS_1-ENTRY_PER_BLOCK*N_ADDRS_2)%ENTRY_PER_BLOCK;
         buf_t* sub_table2=buf_read(sub_block2);
-        result=sub_table2->data[index3];
+        result=*((uint32 *)sub_table2->data+index3);
         if(result==0)
         {
             result=bitmap_alloc_block();
             assert(result!=0, "inode_locate_block: bitmap_alloc_block failed");
-            sub_table2->data[index3]=result;
+            *((uint32 *)sub_table2->data+index3)=result;
         }
         buf_write(sub_table2);
         buf_release(sub_table2);

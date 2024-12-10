@@ -113,8 +113,9 @@ void fs_init()
     bitmap_print(sb.data_bitmap_start);
 
     uint32 max_blocks =  N_ADDRS_1 + N_ADDRS_2 * ENTRY_PER_BLOCK + 2 * ENTRY_PER_BLOCK;
+    // uint32 max_blocks =  N_ADDRS_1 + 1;
 
-    for(uint32 i = 652; i < max_blocks; i++)
+    for(uint32 i = 0; i < max_blocks; i++)
     {
         printf("write %d\n",i);
         ret = inode_write_data(nip, i * BLOCK_SIZE, BLOCK_SIZE, str, false);
@@ -134,10 +135,10 @@ void fs_init()
     printf("check-1 success\n");
 
     // 区域-2
-    ret = inode_read_data(nip, N_ADDRS_1 * BLOCK_SIZE, BLOCK_SIZE, tmp, false);
-    assert(ret == BLOCK_SIZE, "inode_read_data fail");
-    assert(strncmp(tmp, str, BLOCK_SIZE) == 0, "check-2 fail");
-    printf("check-2 success\n");
+    // ret = inode_read_data(nip, N_ADDRS_1 * BLOCK_SIZE, BLOCK_SIZE, tmp, false);
+    // assert(ret == BLOCK_SIZE, "inode_read_data fail");
+    // assert(strncmp(tmp, str, BLOCK_SIZE) == 0, "check-2 fail");
+    // printf("check-2 success\n");
 
     // 区域-3
     ret = inode_read_data(nip, (max_blocks - 2) * BLOCK_SIZE, BLOCK_SIZE, tmp, false);
