@@ -135,10 +135,10 @@ void fs_init()
     printf("check-1 success\n");
 
     // 区域-2
-    // ret = inode_read_data(nip, N_ADDRS_1 * BLOCK_SIZE, BLOCK_SIZE, tmp, false);
-    // assert(ret == BLOCK_SIZE, "inode_read_data fail");
-    // assert(strncmp(tmp, str, BLOCK_SIZE) == 0, "check-2 fail");
-    // printf("check-2 success\n");
+    ret = inode_read_data(nip, N_ADDRS_1 * BLOCK_SIZE, BLOCK_SIZE, tmp, false);
+    assert(ret == BLOCK_SIZE, "inode_read_data fail");
+    assert(strncmp(tmp, str, BLOCK_SIZE) == 0, "check-2 fail");
+    printf("check-2 success\n");
 
     // 区域-3
     ret = inode_read_data(nip, (max_blocks - 2) * BLOCK_SIZE, BLOCK_SIZE, tmp, false);

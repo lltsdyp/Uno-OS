@@ -195,31 +195,6 @@ void inode_unlock_free(inode_t* ip)
 
 /*---------------------------- 与inode管理的data相关 --------------------------*/
 
-// 辅助 inode_locate_block
-// 递归查询或创建block
-static uint32 locate_block(uint32* entry, uint32 bn, uint32 size)
-{
-    if(*entry == 0){
-        *entry = bitmap_alloc_block();
-        assert(entry!=-1,"inode_locate_block: bitmap_alloc_block failed");
-    }
-    
-    if(size == 1)
-        return *entry;    
-
-    uint32* next_entry;
-    uint32 next_size = size / ENTRY_PER_BLOCK;
-    uint32 next_bn = bn % next_size;
-    uint32 ret = 0;
-
-    buf_t* buf = buf_read(*entry);
-    next_entry = (uint32*)(buf->data) + bn / next_size;
-    buf_release(buf);
-    ret = locate_block(next_entry, next_bn, next_size);
-
-    return ret;
-}
-
 // 确定inode里第bn块data block的block_num
 // 如果不存在第bn块data block则申请一个并返回它的block_num
 // 由于inode->addrs的结构, 这个过程比较复杂, 需要单独处理
@@ -271,27 +246,6 @@ static uint32 inode_locate_block(inode_t* ip, uint32 bn)
     // 二级间接
     else if(bn<N_ADDRS_1 + N_ADDRS_2 * ENTRY_PER_BLOCK + N_ADDRS_3 * ENTRY_PER_BLOCK * ENTRY_PER_BLOCK)
     {
-        // // 第一次重定向
-        // // 由于当前只有一个二级间接项，我们不需要向上一种情况一样计算顶层表项的位置，直接访问顶层二级间接项即可
-        // unsigned int *table1=&(ip->disk_inode.addrs[N_ADDRS_1 + N_ADDRS_2]);
-        // if(*table1==0)
-        // {
-        //     *table1 = bitmap_alloc_block();
-        //     assert(*table1!=-1,"inode_locate_block: bitmap_alloc_block failed");
-        //     memset((void *)table1,0,BLOCK_SIZE);
-        // }
-
-        // int index1=(bn-N_ADDRS_1-N_ADDRS_2*ENTRY_PER_BLOCK)/ENTRY_PER_BLOCK;
-        // unsigned int *table2=&table1[index1];
-        // if(*table2==0)
-        // {
-        //     *table2 = bitmap_alloc_block();
-        //     assert(*table2!=-1,"inode_locate_block: bitmap_alloc_block failed");
-        //     memset((void *)table2,0,BLOCK_SIZE);
-        // }
-        // int index2=(bn-N_ADDRS_1-N_ADDRS_2*ENTRY_PER_BLOCK)%ENTRY_PER_BLOCK;
-        // result = &table2[index2];
-
         // 计算出位于哪个三级间接块
         int index1=(bn-N_ADDRS_1-ENTRY_PER_BLOCK*N_ADDRS_2)/
             ENTRY_PER_BLOCK*ENTRY_PER_BLOCK+N_ADDRS_1+N_ADDRS_2;
