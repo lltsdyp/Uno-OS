@@ -164,8 +164,6 @@ inode_t* inode_dup(inode_t* ip)
 // 如果valid失效则从磁盘中读入
 void inode_lock(inode_t* ip)
 {
-    buf_t *b=NULL;
-
     assert(ip&&ip->ref>=1,"ilock: invalid inode or ref=0");
 
     sleeplock_acquire(&(ip->slk));
@@ -331,7 +329,7 @@ uint32 inode_read_data(inode_t* ip, uint32 offset, uint32 len, void* dst, bool u
 
         if(user)
             uvm_copyout(myproc()->pgtbl,(uint64)dst_by_byte,
-                    (void *)(b->data+beg%BLOCK_SIZE),readsize);
+                    (uint64)b->data+beg%BLOCK_SIZE,readsize);
         else
             memcpy((void *)dst_by_byte,(void *)(b->data+beg%BLOCK_SIZE),readsize);
 
@@ -413,8 +411,6 @@ ret:
 void inode_free_data(inode_t* ip)
 {
     assert(sleeplock_holding(&(ip->slk)),"inode_free_data: not holding slk");
-    buf_t *b=NULL;
-    uint32 *data=NULL;
 
     // 直接寻址部分
     for(int i=0;i<N_ADDRS_1;++i)

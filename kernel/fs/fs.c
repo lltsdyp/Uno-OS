@@ -8,20 +8,20 @@
 // 超级块在内存的副本
 super_block_t sb;
 
-// 输出super_block的信息
-static void sb_print()
-{
-    printf("super block information:\n");
-    printf("magic = %x\n", sb.magic);
-    printf("block size = %d\n", sb.block_size);
-    printf("inode blocks = %d\n", sb.inode_blocks);
-    printf("data blocks = %d\n", sb.data_blocks);
-    printf("total blocks = %d\n", sb.total_blocks);
-    printf("inode bitmap start = %d\n", sb.inode_bitmap_start);
-    printf("inode start = %d\n", sb.inode_start);
-    printf("data bitmap start = %d\n", sb.data_bitmap_start);
-    printf("data start = %d\n", sb.data_start);
-}
+// // 输出super_block的信息
+// static void sb_print()
+// {
+//     printf("super block information:\n");
+//     printf("magic = %x\n", sb.magic);
+//     printf("block size = %d\n", sb.block_size);
+//     printf("inode blocks = %d\n", sb.inode_blocks);
+//     printf("data blocks = %d\n", sb.data_blocks);
+//     printf("total blocks = %d\n", sb.total_blocks);
+//     printf("inode bitmap start = %d\n", sb.inode_bitmap_start);
+//     printf("inode start = %d\n", sb.inode_start);
+//     printf("data bitmap start = %d\n", sb.data_bitmap_start);
+//     printf("data start = %d\n", sb.data_start);
+// }
 
 static char str[BLOCK_SIZE],tmp[BLOCK_SIZE],empty[BLOCK_SIZE];
 
@@ -117,7 +117,6 @@ void fs_init()
 
     for(uint32 i = 0; i < max_blocks; i++)
     {
-        printf("write %d\n",i);
         ret = inode_write_data(nip, i * BLOCK_SIZE, BLOCK_SIZE, str, false);
         assert(ret == BLOCK_SIZE, "inode_write_data fail, ret %d",ret);
     }
