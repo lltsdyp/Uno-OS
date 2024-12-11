@@ -25,7 +25,6 @@ static uint32 bitmap_search_and_set(uint32 bitmap_block)
             buf_release(bp);
 
             block_num = bi + bitmap_block;
-
             buf_t *buf = buf_read(block_num);
             memset(buf->data, 0, BLOCK_SIZE);
             buf_release(buf);
@@ -43,12 +42,10 @@ static uint32 bitmap_search_and_set(uint32 bitmap_block)
 // 返回分配的块号，如果没有空闲块，返回 -1。
 uint32 bitmap_alloc_block()
 {
-    // 在数据块位图中查找并分配一个空闲块
     return bitmap_search_and_set(sb.data_bitmap_start);
 }
 
 // unset bit
-// 该函数用于在指定的块位图中释放指定的块，设置对应的位为 0（表示空闲）。
 static void bitmap_unset(uint32 bitmap_block, uint32 num)
 {
     buf_t* buf = buf_read(bitmap_block);
@@ -76,9 +73,7 @@ uint16 bitmap_alloc_inode()
 // bitmap_free_inode
 void bitmap_free_inode(uint16 inode_num)
 {
-    // CHECK!
-    // 在 inode 位图中释放指定的 inode
-    bitmap_unset(sb.inode_bitmap_start, inode_num);
+    bitmap_unset(sb.inode_bitmap_start, (uint32)inode_num);
 }
 
 // 打印所有已经分配出去的 bit 序号（序号从 0 开始），用于调试

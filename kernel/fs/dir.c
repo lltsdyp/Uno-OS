@@ -152,21 +152,24 @@ void dir_print(inode_t *pip)
 static char *skip_element(char *path, char *name)
 {
     while(*path == '/') path++;
-    if(*path == 0) return 0;
+    if(*path == '\0') return NULL;
 
     char *s = path;
-    while (*path != '/' && *path != 0)
+    while (*path != '/' && *path != '\0')
         path++;
 
     int len = path - s;
     if (len >= DIR_NAME_LEN) {
-        memcpy(name, s, DIR_NAME_LEN);
+        memcpy(name, s, DIR_NAME_LEN - 1);
+        name[DIR_NAME_LEN - 1] = '\0';
     } else {
         memcpy(name, s, len);
-        name[len] = 0;
+        name[len] = '\0';
     }
+    
     while (*path == '/')
         path++;
+
     return path;
 }
 
@@ -178,7 +181,6 @@ static inode_t* search_inode(char* path, char* name, bool find_parent)
 {
     inode_t *ip, *next;
     uint16 inode_num;
-    proc_t *p = myproc();
     
     ip = inode_get(INODE_ROOT);
 
