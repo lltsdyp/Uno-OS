@@ -31,5 +31,4 @@ typedef struct inode_disk {
 // 确定inode所在的inode block序号
 #define INODE_LOCATE_BLOCK(inum, sb)  ((inum) / INODE_PER_BLOCK + sb.inode_start)
 
-
 #endif
