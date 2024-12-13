@@ -25,7 +25,7 @@ super_block_t sb;
 //     printf("data start = %d\n", sb.data_start);
 // }
 
-// static char str[BLOCK_SIZE],tmp[BLOCK_SIZE],empty[BLOCK_SIZE];
+static char str[BLOCK_SIZE],tmp[BLOCK_SIZE],empty[BLOCK_SIZE];
 
 // 文件系统初始化
 void fs_init()
@@ -99,104 +99,104 @@ void fs_init()
     // END TEST 8-2
 
     // TEST 8-3
-    // uint32 ret = 0;
+    uint32 ret = 0;
 
-    // for(int i = 0; i < BLOCK_SIZE; i++) {
-    //     str[i] = i;
-    //     empty[i] = 0;
-    // }
+    for(int i = 0; i < BLOCK_SIZE; i++) {
+        str[i] = i;
+        empty[i] = 0;
+    }
 
-    // // 创建新的inode
-    // inode_t* nip = inode_create(FT_FILE, 0, 0);
-    // inode_lock(nip);
+    // 创建新的inode
+    inode_t* nip = inode_create(FT_FILE, 0, 0);
+    inode_lock(nip);
     
-    // // 第一次查看
-    // inode_print(nip);
-    // bitmap_print(sb.data_bitmap_start);
+    // 第一次查看
+    inode_print(nip);
+    bitmap_print(sb.data_bitmap_start);
 
-    // uint32 max_blocks =  N_ADDRS_1 + N_ADDRS_2 * ENTRY_PER_BLOCK + 2 * ENTRY_PER_BLOCK;
-    // // uint32 max_blocks =  N_ADDRS_1 + 1;
+    uint32 max_blocks =  N_ADDRS_1 + N_ADDRS_2 * ENTRY_PER_BLOCK + 2 * ENTRY_PER_BLOCK;
+    // uint32 max_blocks =  N_ADDRS_1 + 1;
 
-    // for(uint32 i = 0; i < max_blocks; i++)
-    // {
-    //     ret = inode_write_data(nip, i * BLOCK_SIZE, BLOCK_SIZE, str, false);
-    //     assert(ret == BLOCK_SIZE, "inode_write_data fail, ret %d",ret);
-    // }
-    // ret = inode_write_data(nip, (max_blocks - 2) * BLOCK_SIZE, BLOCK_SIZE, empty, false);
-    // assert(ret == BLOCK_SIZE, "inode_write_data fail, ret %d",ret);
+    for(uint32 i = 0; i < max_blocks; i++)
+    {
+        ret = inode_write_data(nip, i * BLOCK_SIZE, BLOCK_SIZE, str, false);
+        assert(ret == BLOCK_SIZE, "inode_write_data fail, ret %d",ret);
+    }
+    ret = inode_write_data(nip, (max_blocks - 2) * BLOCK_SIZE, BLOCK_SIZE, empty, false);
+    assert(ret == BLOCK_SIZE, "inode_write_data fail, ret %d",ret);
     
-    // // 第二次查看
-    // inode_print(nip);
-    // get_free_buf();
+    // 第二次查看
+    inode_print(nip);
+    get_free_buf();
 
-    // // 区域-1
-    // ret = inode_read_data(nip, BLOCK_SIZE, BLOCK_SIZE, tmp, false);
-    // assert(ret == BLOCK_SIZE, "inode_read_data fail");
-    // assert(strncmp(tmp, str, BLOCK_SIZE) == 0, "check-1 fail"); 
-    // printf("check-1 success\n");
+    // 区域-1
+    ret = inode_read_data(nip, BLOCK_SIZE, BLOCK_SIZE, tmp, false);
+    assert(ret == BLOCK_SIZE, "inode_read_data fail");
+    assert(strncmp(tmp, str, BLOCK_SIZE) == 0, "check-1 fail"); 
+    printf("check-1 success\n");
 
-    // // 区域-2
-    // ret = inode_read_data(nip, N_ADDRS_1 * BLOCK_SIZE, BLOCK_SIZE, tmp, false);
-    // assert(ret == BLOCK_SIZE, "inode_read_data fail");
-    // assert(strncmp(tmp, str, BLOCK_SIZE) == 0, "check-2 fail");
-    // printf("check-2 success\n");
+    // 区域-2
+    ret = inode_read_data(nip, N_ADDRS_1 * BLOCK_SIZE, BLOCK_SIZE, tmp, false);
+    assert(ret == BLOCK_SIZE, "inode_read_data fail");
+    assert(strncmp(tmp, str, BLOCK_SIZE) == 0, "check-2 fail");
+    printf("check-2 success\n");
 
-    // // 区域-3
-    // ret = inode_read_data(nip, (max_blocks - 2) * BLOCK_SIZE, BLOCK_SIZE, tmp, false);
-    // assert(ret == BLOCK_SIZE, "inode_read_data fail");
-    // assert(strncmp(tmp, empty, BLOCK_SIZE) == 0, "check-2 fail");
-    // printf("check-3 success\n");
+    // 区域-3
+    ret = inode_read_data(nip, (max_blocks - 2) * BLOCK_SIZE, BLOCK_SIZE, tmp, false);
+    assert(ret == BLOCK_SIZE, "inode_read_data fail");
+    assert(strncmp(tmp, empty, BLOCK_SIZE) == 0, "check-2 fail");
+    printf("check-3 success\n");
 
-    // // 释放inode管理的所有data block
-    // inode_free_data(nip);
-    // printf("free success\n");
+    // 释放inode管理的所有data block
+    inode_free_data(nip);
+    printf("free success\n");
 
-    // // 第三次观察
-    // inode_print(nip);
-    // bitmap_print(sb.data_bitmap_start);
+    // 第三次观察
+    inode_print(nip);
+    bitmap_print(sb.data_bitmap_start);
 
-    // inode_unlock_free(nip);
+    inode_unlock_free(nip);
     // END TEST 8-3
 
     // TEST 8-4
 
     // 获取根目录
     // inode_t* ip = inode_alloc(INODE_ROOT);
-    inode_t* ip = inode_get(INODE_ROOT);    
-    inode_lock(ip);
+    // inode_t* ip = inode_get(INODE_ROOT);    
+    // inode_lock(ip);
 
-    // 第一次查看
-    dir_print(ip);
+    // // 第一次查看
+    // dir_print(ip);
     
-    // add entry
-    dir_add_entry(ip, 1, "a.txt");
-    dir_add_entry(ip, 2, "b.txt");
-    dir_add_entry(ip, 3, "c.txt");
+    // // add entry
+    // dir_add_entry(ip, 1, "a.txt");
+    // dir_add_entry(ip, 2, "b.txt");
+    // dir_add_entry(ip, 3, "c.txt");
     
-    // 第二次查看
-    dir_print(ip);
+    // // 第二次查看
+    // dir_print(ip);
 
-    // 第一次检查
-    assert(dir_search_entry(ip, "b.txt") == 2, "error-1");
+    // // 第一次检查
+    // assert(dir_search_entry(ip, "b.txt") == 2, "error-1");
 
-    // delete entry
-    dir_delete_entry(ip, "a.txt");
+    // // delete entry
+    // dir_delete_entry(ip, "a.txt");
    
-    // 第三次查看
-    dir_print(ip);
+    // // 第三次查看
+    // dir_print(ip);
     
-    // add entry
-    dir_add_entry(ip, 1, "d.txt");    
+    // // add entry
+    // dir_add_entry(ip, 1, "d.txt");    
     
-    // 第四次查看
-    dir_print(ip);
+    // // 第四次查看
+    // dir_print(ip);
     
-    // 第二次检查
-    assert(dir_add_entry(ip, 4, "d.txt") == BLOCK_SIZE, "error-2");
+    // // 第二次检查
+    // assert(dir_add_entry(ip, 4, "d.txt") == BLOCK_SIZE, "error-2");
     
-    inode_unlock(ip);
+    // inode_unlock(ip);
 
-    printf("over");
+    // printf("over");
     // END TEST 8-4
 
     // TEST 8-5

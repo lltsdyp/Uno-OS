@@ -83,7 +83,7 @@ buf_t* buf_read(uint32 block_num)
             target->buf_ref++;
             spinlock_release(&lk_buf_cache);
             sleeplock_acquire(&(target->slk));
-            virtio_disk_rw(target, 0);
+            // virtio_disk_rw(target, 0);   // 理论上不需要这一次读取
         }
         buf_node=buf_node->prev;
     }
