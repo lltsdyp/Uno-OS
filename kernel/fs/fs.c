@@ -160,98 +160,98 @@ void fs_init()
 
     // TEST 8-4
 
-    // // 获取根目录
-    // // inode_t* ip = inode_alloc(INODE_ROOT);
-    // inode_t* ip = inode_get(INODE_ROOT);    
-    // inode_lock(ip);
+    // 获取根目录
+    // inode_t* ip = inode_alloc(INODE_ROOT);
+    inode_t* ip = inode_get(INODE_ROOT);    
+    inode_lock(ip);
 
-    // // 第一次查看
-    // dir_print(ip);
+    // 第一次查看
+    dir_print(ip);
     
-    // // add entry
-    // dir_add_entry(ip, 1, "a.txt");
-    // dir_add_entry(ip, 2, "b.txt");
-    // dir_add_entry(ip, 3, "c.txt");
+    // add entry
+    dir_add_entry(ip, 1, "a.txt");
+    dir_add_entry(ip, 2, "b.txt");
+    dir_add_entry(ip, 3, "c.txt");
     
-    // // 第二次查看
-    // dir_print(ip);
+    // 第二次查看
+    dir_print(ip);
 
-    // // 第一次检查
-    // assert(dir_search_entry(ip, "b.txt") == 2, "error-1");
+    // 第一次检查
+    assert(dir_search_entry(ip, "b.txt") == 2, "error-1");
 
-    // // delete entry
-    // dir_delete_entry(ip, "a.txt");
+    // delete entry
+    dir_delete_entry(ip, "a.txt");
    
-    // // 第三次查看
-    // dir_print(ip);
+    // 第三次查看
+    dir_print(ip);
     
-    // // add entry
-    // dir_add_entry(ip, 1, "d.txt");    
+    // add entry
+    dir_add_entry(ip, 1, "d.txt");    
     
-    // // 第四次查看
-    // dir_print(ip);
+    // 第四次查看
+    dir_print(ip);
     
-    // // 第二次检查
-    // assert(dir_add_entry(ip, 4, "d.txt") == BLOCK_SIZE, "error-2");
+    // 第二次检查
+    assert(dir_add_entry(ip, 4, "d.txt") == BLOCK_SIZE, "error-2");
     
-    // inode_unlock(ip);
+    inode_unlock(ip);
 
-    // printf("over");
+    printf("over");
     // END TEST 8-4
 
     // TEST 8-5
     // 创建inode
-    inode_t* ip = inode_get(INODE_ROOT);
-    inode_t* ip_1 = inode_create(FT_DIR, 0, 0);
-    inode_t* ip_2 = inode_create(FT_DIR, 0, 0);
-    inode_t* ip_3 = inode_create(FT_FILE, 0, 0);
+    // inode_t* ip = inode_get(INODE_ROOT);
+    // inode_t* ip_1 = inode_create(FT_DIR, 0, 0);
+    // inode_t* ip_2 = inode_create(FT_DIR, 0, 0);
+    // inode_t* ip_3 = inode_create(FT_FILE, 0, 0);
 
-    // 上锁
-    inode_lock(ip);
-    inode_lock(ip_1);
-    inode_lock(ip_2);
-    inode_lock(ip_3);
+    // // 上锁
+    // inode_lock(ip);
+    // inode_lock(ip_1);
+    // inode_lock(ip_2);
+    // inode_lock(ip_3);
 
-    // 创建目录
-    dir_add_entry(ip, ip_1->inode_num, "user");
-    dir_add_entry(ip_1, ip_2->inode_num, "work");
-    dir_add_entry(ip_2, ip_3->inode_num, "hello.txt");
+    // // 创建目录
+    // dir_add_entry(ip, ip_1->inode_num, "user");
+    // dir_add_entry(ip_1, ip_2->inode_num, "work");
+    // dir_add_entry(ip_2, ip_3->inode_num, "hello.txt");
     
-    // 填写文件
-    inode_write_data(ip_3, 0, 11, "hello world", false);
+    // // 填写文件
+    // inode_write_data(ip_3, 0, 11, "hello world", false);
 
-    // 解锁
-    inode_unlock(ip_3);
-    inode_unlock(ip_2);
-    inode_unlock(ip_1);
-    inode_unlock(ip);
+    // // 解锁
+    // inode_unlock(ip_3);
+    // inode_unlock(ip_2);
+    // inode_unlock(ip_1);
+    // inode_unlock(ip);
 
-    // something wrong
-    // 路径查找
-    char* path = "/user/work/hello.txt";
-    char name[DIR_NAME_LEN];
-    inode_t* tmp_1 = path_to_pinode(path, name);
-    inode_t* tmp_2 = path_to_inode(path);
+    // // something wrong
+    // // 路径查找
+    // char* path = "/user/work/hello.txt";
+    // char name[DIR_NAME_LEN];
+    // inode_t* tmp_1 = path_to_pinode(path, name);
+    // inode_t* tmp_2 = path_to_inode(path);
 
-    assert(tmp_1 != NULL, "tmp1 = NULL");
-    assert(tmp_2 != NULL, "tmp2 = NULL");
-    printf("\nname = %s\n", name);
+    // assert(tmp_1 != NULL, "tmp1 = NULL");
+    // assert(tmp_2 != NULL, "tmp2 = NULL");
+    // printf("\nname = %s\n", name);
 
-    // 输出 tmp_1 的信息
-    inode_lock(tmp_1);
-    inode_print(tmp_1);
-    inode_unlock_free(tmp_1);
+    // // 输出 tmp_1 的信息
+    // inode_lock(tmp_1);
+    // inode_print(tmp_1);
+    // inode_unlock_free(tmp_1);
 
-    // 输出 tmp_2 的信息
-    inode_lock(tmp_2);
-    inode_print(tmp_2);
-    char str[12];
-    str[11] = 0;
-    inode_read_data(tmp_2, 0, tmp_2->disk_inode.size, str, false);
-    printf("read: %s\n", str);
-    inode_unlock_free(tmp_2);
+    // // 输出 tmp_2 的信息
+    // inode_lock(tmp_2);
+    // inode_print(tmp_2);
+    // char str[12];
+    // str[11] = 0;
+    // inode_read_data(tmp_2, 0, tmp_2->disk_inode.size, str, false);
+    // printf("read: %s\n", str);
+    // inode_unlock_free(tmp_2);
 
-    printf("over");
+    // printf("over");
 
     // END TEST 8-5
 

@@ -4,7 +4,7 @@
 #include "lib/print.h"
 #include "lib/str.h"
 
-#define N_BLOCK_BUF 512
+#define N_BLOCK_BUF 64
 #define BLOCK_NUM_UNUSED 0xFFFFFFFF
 
 // buf cache
@@ -76,16 +76,16 @@ buf_t* buf_read(uint32 block_num)
     while(target==NULL&&buf_node->buf_ref==0&&buf_node!=&head_buf)
     {
         // 找到一个块
-        if(buf_node->buf_ref==0)
+        if(buf_node->block_num==block_num)
         {
-            insert_head(buf_node,1);
+            insert_head(buf_node, 1);
             target=buf_node;
-            target->block_num=block_num;
-            target->buf_ref=1;
+            target->buf_ref++;
             spinlock_release(&lk_buf_cache);
             sleeplock_acquire(&(target->slk));
             virtio_disk_rw(target, 0);
         }
+        buf_node=buf_node->prev;
     }
     // 避免多次遍历链表
     oldest_node=buf_node->next;
@@ -107,6 +107,12 @@ buf_t* buf_read(uint32 block_num)
     if(target==NULL && oldest_node!=&head_buf)
     {
         target=oldest_node;
+        target->buf_ref=1;
+        target->block_num=block_num;
+
+        spinlock_release(&lk_buf_cache);
+        sleeplock_acquire(&(target->slk));
+        virtio_disk_rw(target, 0);
     }
 
     assert(target!=NULL, "buf_read: no buf available");
