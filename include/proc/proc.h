@@ -112,6 +112,9 @@ typedef struct proc {
 
     uint64 kstack;           // 内核栈的虚拟地址
     context_t ctx;           // 内核态进程上下文
+
+    inode_t* cwd;            // 当前目录
+    file_t* filelist[FILE_PER_PROC]; // 打开文件列表
 } proc_t;
 
 void     proc_init();                                  // 进程模块初始化

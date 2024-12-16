@@ -176,7 +176,7 @@ void uvm_mmap(uint64 begin, uint32 npages, int perm)
             if (prev_npages && next_npages)
             {
                 // 该情况下，需要分配一个新的mmap_region，一个管理前部一个管理后部
-                mmap_region_t *new_region = mmap_region_alloc();
+                mmap_region_t *new_region = mmap_region_alloc(false);
                 region->npages = prev_npages;
 
                 // 跳过从分配的页面的起始地址开始的npages个页面
@@ -245,7 +245,7 @@ void uvm_munmap(uint64 begin, uint32 npages)
 
 
     // new mmap_region 的产生
-    mmap_region_t *new_region = mmap_region_alloc();
+    mmap_region_t *new_region = mmap_region_alloc(false);
     new_region->begin = begin;
     new_region->npages = npages;
     new_region->next=NULL;

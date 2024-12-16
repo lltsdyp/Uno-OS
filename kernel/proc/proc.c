@@ -123,12 +123,10 @@ void proc_make_first()  //TODO:增加mmap支持
 
 
     // 设置mmap区域
-    first_proc->mmap=mmap_region_alloc();
+    first_proc->mmap=mmap_region_alloc(false);
     first_proc->mmap->begin=MMAP_BEGIN;
     first_proc->mmap->npages=0;//特殊标记节点，表示开始
-    first_proc->mmap->next=mmap_region_alloc();
-    first_proc->mmap->next->begin=MMAP_BEGIN;
-    first_proc->mmap->next->npages=(MMAP_END-MMAP_BEGIN)/PGSIZE;
+    first_proc->mmap->next=mmap_region_alloc(true);
 
     first_proc->parent=NULL;
     first_proc->state=RUNNABLE;

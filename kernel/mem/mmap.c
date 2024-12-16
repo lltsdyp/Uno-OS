@@ -44,6 +44,13 @@ mmap_region_t* mmap_region_alloc(bool init)
     
     assert(region != NULL, "mmap_region_alloc failed");
 
+    if(init)
+    {
+        region->mmap.begin = MMAP_BEGIN;
+        region->mmap.npages = 0;
+        region->mmap.next = NULL;
+    }
+
     list_head->next = region->next;
     spinlock_release(&list_lk);
 
