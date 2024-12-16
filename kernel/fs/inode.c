@@ -290,11 +290,11 @@ static uint32 inode_locate_block(inode_t* ip, uint32 bn)
     }
 
     // 更新size，只有这个函数会为inode分配新的block，因此更新逻辑放在此处
-    if(ip->disk_inode.size<(bn+1)*BLOCK_SIZE)
-    {
-        ip->disk_inode.size=(bn+1)*BLOCK_SIZE;
-        inode_rw(ip,true);
-    }
+    // if(ip->disk_inode.size<(bn+1)*BLOCK_SIZE)
+    // {
+    //     ip->disk_inode.size=(bn+1)*BLOCK_SIZE;
+    //     inode_rw(ip,true);
+    // }
     return result;
 }
 
@@ -372,6 +372,9 @@ uint32 inode_write_data(inode_t* ip, uint32 offset, uint32 len, void* src, bool 
             uvm_copyin(myproc()->pgtbl,(uint64)b->data+beg%BLOCK_SIZE, (uint64)src_by_byte, writesize);
         else
             memcpy((void *)(b->data+beg%BLOCK_SIZE), (void *)src_by_byte, writesize);
+        
+        if(offset+len>ip->disk_inode.size)
+            ip->disk_inode.size=offset+len;
 
         buf_write(b);
         buf_release(b);
