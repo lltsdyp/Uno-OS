@@ -16,6 +16,7 @@
 
 volatile static int started = 0;
 
+// TODO
 int main()
 {
     int cpuid = r_tp();

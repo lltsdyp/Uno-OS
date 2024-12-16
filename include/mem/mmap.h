@@ -10,8 +10,9 @@ typedef struct mmap_region {
 } mmap_region_t;
 
 void           mmap_init();
-mmap_region_t* mmap_region_alloc();
+mmap_region_t* mmap_region_alloc(bool init);
 void           mmap_region_free(mmap_region_t* mmap);
 void           mmap_show_mmaplist();
 
 #endif
+// TODO!

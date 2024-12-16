@@ -87,7 +87,7 @@ void   uvm_copy_pgtbl(pgtbl_t old, pgtbl_t new, uint64 heap_top, uint32 ustack_p
 void   uvm_mmap(uint64 begin, uint32 npages, int perm);
 void   uvm_munmap(uint64 begin, uint32 npages);
 
-uint64 uvm_heap_grow(pgtbl_t pgtbl, uint64 heap_top, uint32 len);
+uint64 uvm_heap_grow(pgtbl_t pgtbl, uint64 heap_top, uint32 len,int flags);
 uint64 uvm_heap_ungrow(pgtbl_t pgtbl, uint64 heap_top, uint32 len);
 
 void   uvm_copyin(pgtbl_t pgtbl, uint64 dst, uint64 src, uint32 len);
@@ -95,3 +95,4 @@ void   uvm_copyout(pgtbl_t pgtbl, uint64 dst, uint64 src, uint32 len);
 void   uvm_copyin_str(pgtbl_t pgtbl, uint64 dst, uint64 src, uint32 maxlen);
 
 #endif
+// TODO!

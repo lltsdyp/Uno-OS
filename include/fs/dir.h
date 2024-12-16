@@ -19,4 +19,10 @@ void   dir_print(inode_t* pip);
 inode_t* path_to_inode(char* path);
 inode_t* path_to_pinode(char* path, char* name);
 
+inode_t* path_create_inode(char* path, uint16 type, uint16 major, uint16 minor); 
+uint32   path_link(char* old_path, char* new_path); 
+uint32   path_unlink(char* path); 
+
+
 #endif
+// TODO!

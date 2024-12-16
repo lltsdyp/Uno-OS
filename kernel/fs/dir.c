@@ -235,3 +235,5 @@ inode_t* path_to_pinode(char* path, char* name)
 {
     return search_inode(path, name, true);
 }
+
+// TODO:新函数

@@ -84,10 +84,10 @@ int uart_getc_sync(void)
 // 中断处理(键盘输入->屏幕输出)
 void uart_intr(void)
 {
-  while(1)
-  {
-    int c = uart_getc_sync();
-    if(c == -1) break;
-    uart_putc_sync(c);
-  }
+    while(1)
+    {
+        int c = uart_getc_sync();
+        if(c == -1) break;
+        console_intr(c);
+    }
 }

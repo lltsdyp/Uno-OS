@@ -19,4 +19,18 @@ typedef enum {false = 0, true = 1} bool;
 #define NULL ((void*)0)
 #endif
 
+// 目录定义
+typedef struct dirent {
+    uint16 inode_num;
+    char name[30];
+} dirent_t;
+
+// 文件状态定义
+typedef struct file_state {
+    uint16 type;
+    uint16 inode_num;
+    uint16 nlink;
+    uint32 size;
+} fstat_t;
+
 #endif

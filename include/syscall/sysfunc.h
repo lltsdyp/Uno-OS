@@ -11,11 +11,24 @@ uint64 sys_fork();
 uint64 sys_wait();
 uint64 sys_exit();
 uint64 sys_sleep();
-uint64 sys_alloc_block();
-uint64 sys_free_block();
-uint64 sys_read_block();
-uint64 sys_write_block();
-uint64 sys_release_block();
-uint64 sys_show_buf();
+// uint64 sys_alloc_block();
+// uint64 sys_free_block();
+// uint64 sys_read_block();
+// uint64 sys_write_block();
+// uint64 sys_release_block();
+// uint64 sys_show_buf();
+
+uint64 sys_open();
+uint64 sys_close();
+uint64 sys_read();
+uint64 sys_write();
+uint64 sys_lseek();
+uint64 sys_dup();
+uint64 sys_fstat();
+uint64 sys_getdir();
+uint64 sys_mkdir();
+uint64 sys_chdir();
+uint64 sys_link();
+uint64 sys_unlink();
 
 #endif

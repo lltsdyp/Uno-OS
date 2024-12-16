@@ -4,8 +4,8 @@ KERN = kernel
 USER = user
 MKFS = mkfs
 KERNEL_ELF = kernel-qemu
-CPUNUM = 2
 FS_IMG = fs.img
+CPUNUM = 2
 
 .PHONY: clean $(KERN) $(USER) $(MKFS)
 
@@ -35,22 +35,16 @@ QEMUGDB = $(shell if $(QEMU) -help | grep -q '^-gdb'; \
 build: $(USER) $(KERN) $(MKFS)
 
 # qemu运行
-qemu: clean $(USER) $(KERN) $(MKFS)
+qemu: $(USER) $(KERN) $(MKFS)
 	$(QEMU) $(QEMUOPTS)
-
-.gdbinit-gui: .gdbinit.tmpl-riscv-gui
-	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
-
-qemu-gdb-gui: clean $(KERN) $(USER) $(MKFS) .gdbinit-gui
-	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
 
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
-qemu-gdb: clean $(KERN) $(USER) $(MKFS) .gdbinit
+qemu-gdb: $(USER) $(KERN) $(MKFS) .gdbinit
 	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
 
 clean:
 	$(MAKE) --directory=$(KERN) clean
 	$(MAKE) --directory=$(MKFS) clean
-	rm -f $(KERNEL_ELF) $(FS_IMG) .gdbinit .gdbinit-gui
+	rm -f $(KERNEL_ELF) $(FS_IMG) .gdbinit

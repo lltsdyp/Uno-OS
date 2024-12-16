@@ -151,9 +151,110 @@ void inode_create_mkfs(inode_disk_t* inode, unsigned int inode_num, unsigned sho
     inode->minor = xshort(0);
     inode->nlink = xshort(1);
     inode->size = xint(0);
-    for(int i = 0; i < 13; i++)
-        inode->addrs[i] = 0;
+    for(int i = 0; i < N_ADDRS; i++)
+        inode->addrs[i] = xint(0);
     inode_write(inode_num, inode);
+}
+
+// 申请一个inode (修改bitmap)
+unsigned short inode_alloc()
+{
+    char buf[BLOCK_SIZE];
+    unsigned int byte, shift;
+    unsigned char bit_cmp;
+
+    block_read(sb.inode_bitmap_start, buf);
+    for(byte = 0; byte < BLOCK_SIZE; byte++) {
+        bit_cmp = 1;
+        for(shift = 0; shift <= 7; shift++) {
+            if((bit_cmp & buf[byte]) == 0) {
+                buf[byte] |= bit_cmp;
+                goto find;
+            }
+            bit_cmp = bit_cmp << 1;
+        }
+    }
+    printf("inode_alloc: no bit left\n");
+    while(1);
+find:
+    block_write(sb.inode_bitmap_start, buf);
+    return (unsigned short)(byte * 8 + shift);
+}
+
+// dirent_create 专用
+char dir_buf[BLOCK_SIZE];
+
+// 添加一个目录项
+unsigned int dirent_create(unsigned int dir_block, unsigned int offset, char* name, unsigned short inode_num)
+{
+    dirent_t de;
+    de.inode_num = xint(inode_num);
+    assert(strlen(name) < 30);
+    strcpy(de.name, name);
+
+    block_read(dir_block, dir_buf);
+    memmove(dir_buf + offset, &de, sizeof(de));
+    block_write(dir_block, dir_buf);
+
+    return offset + sizeof(dirent_t);
+}
+
+// 辅助 inode_locate_block
+// 递归查询或创建block
+static unsigned int locate_block(unsigned int* entry, unsigned int bn, unsigned int size)
+{
+    if(*entry == 0)
+        *entry = block_alloc();
+
+    if(size == 1)
+        return *entry;    
+
+    unsigned int* next_entry;
+    unsigned int next_size = size / ENTRY_PER_BLOCK;
+    unsigned int next_bn = bn % next_size;
+    unsigned int ret = 0;
+
+    char buf[BLOCK_SIZE];
+    block_read(*entry, buf);
+    next_entry = (unsigned int*)(buf) + bn / next_size;
+    ret = locate_block(next_entry, next_bn, next_size);
+
+    return ret;
+}
+
+// 确定inode里第bn块data block的block_num
+// 如果不存在第bn块data block则申请一个并返回它的block_num
+// 由于inode->addrs的结构, 这个过程比较复杂, 需要单独处理
+static unsigned int inode_locate_block(inode_disk_t* ip, unsigned int bn)
+{
+    // 在第一个区域
+    if(bn < N_ADDRS_1)
+        return locate_block(&ip->addrs[bn], bn, 1);
+
+    // 在第二个区域
+    bn -= N_ADDRS_1;
+    if(bn < N_ADDRS_2 * ENTRY_PER_BLOCK)
+    {
+        unsigned int size = ENTRY_PER_BLOCK;
+        unsigned int idx = bn / size;
+        unsigned int b = bn % size;
+        return locate_block(&ip->addrs[N_ADDRS_1 + idx], b, size);
+    }
+
+    // 在第三个区域
+    bn -= N_ADDRS_2 * ENTRY_PER_BLOCK;
+    if(bn < N_ADDRS_3 * ENTRY_PER_BLOCK * ENTRY_PER_BLOCK)
+    {
+        unsigned int size = ENTRY_PER_BLOCK * ENTRY_PER_BLOCK;
+        unsigned int idx = bn / size;
+        unsigned int b = bn % size;
+        return locate_block(&ip->addrs[N_ADDRS_1 + N_ADDRS_2 + idx], b, size);
+    }
+
+    printf("inode_locate_block: overflow\n");
+    while(1);
+
+    return 0;
 }
 
 int main(int argc, char* argv[])
@@ -199,19 +300,57 @@ int main(int argc, char* argv[])
     }
     inode_create_mkfs(&rooti, root_inum, FT_DIR);
 
-    // 准备 . 和 ..
-    memset(buf, 0, BLOCK_SIZE);
-    dirent_t* de;
-    de = (dirent_t*)buf;
-    de->inode_num = xshort(root_inum);
-    strcpy(de->name, ".");
-    de = (dirent_t*)(buf + sizeof(dirent_t));
-    de->inode_num = xshort(root_inum);
-    strcpy(de->name, "..");
+    // 添加 . 和 ..
+    unsigned int offset = 0;
+    offset = dirent_create(rooti_block, offset, ".\0", root_inum);
+    offset = dirent_create(rooti_block, offset, "..\0", root_inum);
 
-    // 向根目录里写入
-    unsigned int rooti_block = block_alloc();
-    block_write(rooti_block, buf);
+    // 写入user目录里的可执行文件
+    // ./user/_xxx
+    char* shortname;
+    int fd, read_len;
+    inode_disk_t inode;
+    unsigned short inum;
+    unsigned int bn = 0, block_num = 0;
+
+    for(int i = 2; i < argc; i++)
+    {
+        // 确定shortname
+        shortname = argv[i] + 7;
+        assert(*shortname == '_');
+        assert(index(shortname, '/') == 0);
+        shortname++;
+
+        // 申请新的inode + 创建目录项
+        inum = inode_alloc();
+        inode_create(&inode, inum, FT_FILE);
+        offset = dirent_create(rooti_block, offset, shortname, inum);
+        
+        // 打开文件
+        fd = open(argv[i], 0);
+        if(fd < 0) {
+            perror(argv[i]);
+            exit(1);
+        }
+        
+        // 获取文件内容并写入磁盘
+        while(1) {
+            read_len = read(fd, buf, BLOCK_SIZE);
+            block_num = inode_locate_block(&inode, bn++);
+            block_write(block_num, buf);
+            inode.size += read_len;
+            if(read_len < BLOCK_SIZE) break;
+        }
+        
+        // 关闭文件
+        close(fd);
+
+        // 写回inode
+        for(int j = 0; j < N_ADDRS; j++)
+            inode.addrs[j] = xint(inode.addrs[j]);
+        inode.size = xint(inode.size);
+        inode_write(inum, &inode);
+    }
 
     // 更新rooti
     rooti.addrs[0] = xint(rooti_block);
