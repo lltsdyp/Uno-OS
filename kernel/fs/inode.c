@@ -312,7 +312,7 @@ uint32 inode_read_data(inode_t* ip, uint32 offset, uint32 len, void* dst, bool u
 
     if(offset > ip->disk_inode.size || offset + len < offset)
         return -1;
-    if(len>ip->disk_inode.size-offset)
+    if(len+offset>ip->disk_inode.size)
         total=ip->disk_inode.size-offset;
     
     uint32 beg=offset;
@@ -359,6 +359,8 @@ uint32 inode_write_data(inode_t* ip, uint32 offset, uint32 len, void* src, bool 
     uint32 beg=offset;
     char *src_by_byte=(char *)src;
 
+    int size_modified=0;
+
     while(count<len)
     {
         buf_t *b=buf_read(inode_locate_block(ip,beg/BLOCK_SIZE));
@@ -373,8 +375,6 @@ uint32 inode_write_data(inode_t* ip, uint32 offset, uint32 len, void* src, bool 
         else
             memcpy((void *)(b->data+beg%BLOCK_SIZE), (void *)src_by_byte, writesize);
         
-        if(offset+len>ip->disk_inode.size)
-            ip->disk_inode.size=offset+len;
 
         buf_write(b);
         buf_release(b);
@@ -382,6 +382,16 @@ uint32 inode_write_data(inode_t* ip, uint32 offset, uint32 len, void* src, bool 
         beg+=writesize;
         count+=writesize;
         src_by_byte+=writesize;
+        
+        if(offset+count>ip->disk_inode.size){
+            ip->disk_inode.size=offset+len;
+            size_modified=1;
+        }
+    }
+
+    if(size_modified)
+    {
+        inode_rw(ip,true);
     }
     return count;
 }
