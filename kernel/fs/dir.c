@@ -56,6 +56,9 @@ uint32 dir_add_entry(inode_t *pip, uint16 inode_num, char *name)
         return BLOCK_SIZE;  // 目录项已存在
 
     dirent_t *de;
+    if(!pip->disk_inode.addrs[0])
+        pip->disk_inode.addrs[0] = bitmap_alloc_block();
+    assert(pip->disk_inode.addrs[0], "dir_add_entry: no free block");
     buf_t *buf = buf_read(pip->disk_inode.addrs[0]);
 
     // 查找第一个空的目录项

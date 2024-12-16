@@ -24,9 +24,16 @@ static uint32 bitmap_search_and_set(uint32 bitmap_block)
             buf_write(bp);
             buf_release(bp);
 
-            block_num = bi + bitmap_block;
+            if(bitmap_block==sb.inode_bitmap_start)
+                block_num = bi + sb.inode_start;
+            else if(bitmap_block==sb.data_bitmap_start)
+                block_num = bi + sb.data_start;
+            else{
+                panic("bitmap_search_and_set: invalid bitmap block %d\n", bitmap_block);
+                return -1;    
+            }
             buf_t *buf = buf_read(block_num);
-            memset(buf->data, 0, BLOCK_SIZE);
+            // memset(buf->data, 0, BLOCK_SIZE);
             buf_release(buf);
 
             return block_num;
