@@ -7,6 +7,7 @@
 #include "mem/vmem.h"
 #include "proc/cpu.h"
 #include "lib/print.h"
+#include "dev/console.h"
 
 // 设备列表(读写接口)
 dev_t devlist[N_DEV];
@@ -46,7 +47,12 @@ file_t* file_alloc()
 // 创建设备文件(供proczero创建console)
 file_t* file_create_dev(char* path, uint16 major, uint16 minor)
 {
-    // TODO
+    inode_t *dev_inode=path_create_inode(path, FT_DEV, major, minor);
+    inode_unlock(dev_inode);
+    file_t *dev_file=file_alloc();
+    dev_file->ip=dev_inode;
+    dev_file->major=major;
+    // TODO:是否有BUG？
 }
 
 // 打开一个文件
