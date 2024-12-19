@@ -12,20 +12,13 @@ static uint64 (*syscalls[])(void) = {
     [SYS_brk]           sys_brk,
     [SYS_mmap]          sys_mmap,
     [SYS_munmap]        sys_munmap,
-    // [SYS_copyin]        sys_copyin,
-    // [SYS_copyout]       sys_copyout,
-    // [SYS_copyinstr]     sys_copyinstr,
     [SYS_fork]          sys_fork,
     [SYS_wait]          sys_wait,
     [SYS_exit]          sys_exit,
     [SYS_sleep]         sys_sleep,
 
-    [SYS_alloc_block]    sys_alloc_block,
-    [SYS_free_block]    sys_free_block,
-    [SYS_read_block]    sys_read_block,
-    [SYS_write_block]   sys_write_block,
-    [SYS_release_block] sys_release_block,
-    [SYS_show_buf]      sys_show_buf,
+    [SYS_open]          sys_open,
+    [SYS_close]         sys_close,
 };
 
 // 系统调用
