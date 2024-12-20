@@ -134,9 +134,9 @@ uint32 file_read(file_t* file, uint32 len, uint64 dst, bool user)
         case FD_FILE: // fall through
         case FD_DIR:
         inode_lock(file->ip);
-        uint32 n=file_read_data(file->ip, file->offset, len, dst, user);
-        if(n!=-1)
-            count+=n;
+        count =inode_read_data(file->ip, file->offset, len, dst, user);
+        if(count!=-1)
+            file_lseek(file, count, LSEEK_ADD);
         inode_unlock(file->ip);
         break;
 
@@ -165,9 +165,9 @@ uint32 file_write(file_t* file, uint32 len, uint64 src, bool user)
         case FD_FILE:
         case FD_DIR:
         inode_lock(file->ip);
-        uint32 n=file_write_data(file->ip, file->offset, len, src, user);
-        if(n!=-1)
-            count+=n;
+        count=inode_write_data(file->ip, file->offset, len, src, user);
+        if(count!=-1)
+            file_lseek(file, count, LSEEK_ADD);
         inode_unlock(file->ip);
         break;
         case FD_DEVICE:
@@ -189,6 +189,21 @@ uint32 file_write(file_t* file, uint32 len, uint64 src, bool user)
 uint32 file_lseek(file_t* file, uint32 offset, int flags)
 {
     assert(file->type == FD_FILE, "file_lseek: type must be FD_FILE, received file id: %d",file->type);
+    switch(flags)
+    {
+        case LSEEK_SET:
+        file->offset=offset;
+        break;
+        case LSEEK_ADD:
+        file->offset+=offset;
+        break;
+        case LSEEK_SUB:
+        file->offset-=offset;
+        break;
+        default:
+        panic("file_lseek: invalid flags %d",flags);
+    }
+    return file->offset;
 }
 
 // file->ref++ with lock
