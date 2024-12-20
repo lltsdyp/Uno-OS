@@ -4,7 +4,8 @@
 #include "common.h"
 #include "inode.h"
 
-#define DIR_NAME_LEN 30
+#define DIR_NAME_LEN 30  // 最大目录名长度
+#define DIR_PATH_LEN 128 // 最大文件路径长度
 
 typedef struct dirent {
     uint16 inode_num;

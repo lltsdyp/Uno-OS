@@ -10,6 +10,32 @@
 #include "fs/bitmap.h"
 #include "fs/buf.h"
 #include "fs/fs.h"
+#include "proc/elf.h"
+#include "memlayout.h"
+
+// 检查是否位于有效的内存地址
+int is_valid_addr(uint64 addr)
+{
+    // 首先检查是否位于堆区或者静态代码/数据区
+    if(addr>=USER_VMEM_START&&addr+sizeof(uint64)<myproc()->heap_top)
+        return 1
+
+    // 然后检查是否位于mmap区
+    for(mmap_region_t* node=myproc()->mmap->next; node!=NULL; node=node->next)
+    {
+        // 在但是未分配
+        if(addr>=node->begin && addr+sizeof(uint64)<node->begin+node->npages*PGSIZE)
+            return 0;
+    }
+    if(addr>=MMAP_BEGIN&& addr+sizeof(uint64)<MMAP_END)
+        return 1;
+
+    // 最后检查是否位于堆栈区
+    if(addr>=USER_STACK_BOTTOM-PGSIZE*myproc()->ustack_pages&&addr+sizeof(uint64)<USER_STACK_BOTTOM)
+        return 1;
+
+    return 0;
+}
 
 // 打印字符
 // uint64 addr
@@ -153,4 +179,45 @@ uint64 sys_exec()
     char path[DIR_PATH_LEN];    // 文件路径
     char* argv[ELF_MAXARGS];    // 参数指针数组
 
+    uint64 ret=-1;
+
+    uint64 arg_base=0;
+
+    if(argstr(0, path, DIR_PATH_LEN) < 0 || argaddr(1, &arg_base) < 0){
+        return -1;
+    }
+
+    for(int i=0; i<ELF_MAXARGS; i++)
+    {
+        uint64 arg_addr=arg_base+i*sizeof(uint64);
+        uint64 str_addr=0;
+
+        // 首先从用户态获取指针值
+        if(!is_valid_addr(arg_addr))
+            break;
+        uvm_copyin(myproc()->pgtbl, &arg_addr, str_addr, sizeof(uint64));
+
+        // 以0作为argv的结束
+        if(uarg==0){
+            argv[i]=NULL;
+
+            ret=proc_exec(path, argv);
+            break;
+        }
+
+        // 根据指针值获取真正的参数内容
+        if(!is_valid_addr(arg_addr))
+            break;
+            
+        argv[i]=(char*)pmem_alloc(true);
+        uvm_copyin_str(myproc()->pgtbl, argv[i], arg_addr, ELF_MAXARG_LEN);
+
+    }
+
+    // 清理
+    for(int i=0;argv[i]!=NULL;i++)
+    {
+        pmem_free(argv[i],true);
+    }
+    return ret;
 }
