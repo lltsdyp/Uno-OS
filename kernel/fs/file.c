@@ -47,8 +47,8 @@ file_t* file_alloc()
 // 创建设备文件(供proczero创建console)
 file_t* file_create_dev(char* path, uint16 major, uint16 minor)
 {
-    inode_t *dev_inode=path_create_inode(path, FT_DEV, major, minor);
-    inode_unlock(dev_inode);
+    inode_t *dev_inode=path_create_inode(path, FT_DEVICE, major, minor);
+    inode_unlock_free(dev_inode);
     file_t *dev_file=file_alloc();
     dev_file->ip=dev_inode;
     dev_file->major=major;
@@ -79,7 +79,7 @@ file_t* file_open(char* path, uint32 open_mode)
         inode_lock(file_inode);
     }
 
-    assert(!(file_inode->disk_inode.type == FT_DIR && file_inode->disk_inode.major>=NDEV),"Invalid device file");
+    assert(!(file_inode->disk_inode.type == FT_DEVICE && file_inode->disk_inode.major>=NDEV),"Invalid device file");
 
     // 第二步：填充file_t结构体
 
