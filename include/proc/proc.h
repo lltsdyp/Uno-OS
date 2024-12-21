@@ -9,6 +9,8 @@ typedef uint64* pgtbl_t;
 
 typedef struct mmap_region mmap_region_t;
 
+#define FILE_PER_PROC  10
+
 // context 定义
 typedef struct context {
     uint64 ra; // 返回地址
@@ -101,6 +103,12 @@ typedef struct proc {
     struct proc* parent;     // 父进程
     int exit_state;          // 进程退出时的状态(父进程可能关心)
     void* sleep_space;       // 睡眠是为在等待什么
+
+    // HRRN相关
+    uint64 begin_runnable_time;
+    uint64 begin_running_time;
+    uint64 total_wait_time;
+    uint64 total_exec_time;
 
     // 锁区域结束
 

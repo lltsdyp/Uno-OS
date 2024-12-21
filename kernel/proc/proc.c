@@ -10,6 +10,9 @@
 #include "proc/proc.h"
 #include "riscv.h"
 #include "fs/fs.h"
+#include "dev/timer.h"
+
+#define RATE_GRADIENT 8
 
 // in trampoline.S
 extern char trampoline[];
@@ -130,6 +133,7 @@ void proc_make_first()  //TODO:增加mmap支持
 
     first_proc->parent=NULL;
     first_proc->state=RUNNABLE;
+    first_proc->begin_runnable_time=timer_get_ticks();
     proczero=first_proc;
 
     spinlock_release(&(first_proc->lk));
@@ -219,6 +223,11 @@ void proc_free(proc_t* p)
     p->ustack_pages=0;
     p->tf=NULL;
     p->mmap=NULL;
+    
+    p->begin_runnable_time=0;
+    p->begin_running_time=0;
+    p->total_exec_time=0;
+    p->total_wait_time=0;
 
     memset((void *)&(p->ctx),0,sizeof(context_t));
 }
@@ -249,6 +258,14 @@ int proc_fork()
     *(new_proc->tf)=*(myproc()->tf);
     new_proc->tf->a0=0;
 
+    // 文件描述符的拷贝
+    for(int i=0;i<FILE_PER_PROC;++i)
+    {
+        if(myproc()->filelist[i]!=NULL)
+            new_proc->filelist[i]=file_dup(myproc()->filelist[i]);
+    }
+    new_proc->cwd=inode_dup(myproc()->cwd);
+
     // 拷贝页表
     uvm_copy_pgtbl(myproc()->pgtbl,new_proc->pgtbl,myproc()->heap_top,myproc()->ustack_pages,myproc()->mmap);
 
@@ -274,6 +291,7 @@ int proc_fork()
 
     // 进程状态设置
     new_proc->state=RUNNABLE;
+    new_proc->begin_runnable_time=timer_get_ticks();
     new_proc->parent=myproc();
 
     spinlock_release(&(new_proc->lk));
@@ -287,6 +305,9 @@ void proc_yield()
 {
     spinlock_acquire(&(myproc()->lk));
     myproc()->state=RUNNABLE;
+    uint64 ticks=timer_get_ticks();
+    myproc()->total_exec_time+=ticks-myproc()->begin_running_time;
+    myproc()->begin_runnable_time=ticks;
     proc_sched();
     spinlock_release(&(myproc()->lk));
 }
@@ -408,44 +429,81 @@ void proc_sched()
     mycpu()->origin=origin;
 }
 
+// 检查响应比
+// 当前锁被持有
+static uint64 get_weight(proc_t *p)
+{
+    assert(spinlock_holding(&(p->lk)), "get_weight: Not holding lock");
+    if(p->total_exec_time==0)
+    {
+        return -1;// -1等价于UINT64_MAX
+    }
+    return ((p->total_exec_time+p->total_wait_time)<<RATE_GRADIENT)/p->total_exec_time;
+}
+
 // 调度器
 void proc_scheduler()
 {
-    mycpu()->proc=NULL;//当前没有正在执行的进程
-    int found=0;
-    proc_t* p=NULL;
-    while(1)
+    mycpu()->proc = NULL; // 当前没有正在执行的进程
+    int found = 0;
+    proc_t *p = NULL,*next_p = NULL;
+    while (1)
     {
         // 开中断以避免死锁的发生
         intr_on();
 
-        found=0;
-        for(int idx=0;idx<NPROC;++idx)
+        found = 0;
+        next_p=NULL;
+        uint64 max_weight=0;
+        uint64 ticks = timer_get_ticks();
+        for (int idx = 0; idx < NPROC; ++idx)
         {
-            p=&procs[idx];
+            p = &procs[idx];
             spinlock_acquire(&(p->lk));
-            if(p->state==RUNNABLE)
+            if (p->state == RUNNABLE)
             {
-                // FOR DEBUG
-                // printf("proc %d running\n",p->pid);
-                p->state=RUNNING;
-                mycpu()->proc=p;
+                p->total_wait_time += ticks - p->begin_runnable_time; // 首先更新他们的等待时间，然后再进行权重计算
+                p->begin_runnable_time=ticks;
+                printf("Proc %d's current weight is %d\n",p->pid,(int)get_weight(p));  // 调试用
 
-                // 切换到p执行
-                swtch(&(mycpu()->ctx),&(p->ctx));
+                // 下一个要执行的进程就是当前我们检查的proc
+                if(max_weight<get_weight(p))
+                {
+                    max_weight=get_weight(p);
+                    next_p=p;
+                }
 
-                //发生进程调度前首先将cpu的当前proc清空
-                mycpu()->proc=NULL;
-
-                found=1;
+                found = 1;
             }
             spinlock_release(&(p->lk));
         }
-    }
-    if(found==0)
-    {
-        intr_on();
-        asm volatile("wfi");// 进入低功耗模式等待可执行的进程
+
+        if (found == 0)
+        {
+            intr_on();
+            asm volatile("wfi"); // 进入低功耗模式等待可执行的进程
+        }
+        else
+        {
+            spinlock_acquire(&(next_p->lk));
+            printf("Proc %d running\n",next_p->pid);
+            assert(next_p->state == RUNNABLE, "proc_scheduler: proc is not runnable");
+            next_p->state = RUNNING;
+            mycpu()->proc = next_p;
+            next_p->begin_running_time = ticks;                        // 记录开始运行的时间
+
+            // 切换到next_p执行
+            swtch(&(mycpu()->ctx), &(next_p->ctx));
+
+            // 更新进程的运行时间
+            ticks = timer_get_ticks();
+            mycpu()->proc->total_exec_time += ticks - mycpu()->proc->begin_running_time; // 累计执行时间
+            mycpu()->proc->begin_runnable_time = ticks;                                  // 记录等待的开始时间
+            spinlock_release(&(next_p->lk));
+
+            // 发生进程调度前首先将cpu的当前proc清空
+            mycpu()->proc = NULL;
+        }
     }
 }
 
@@ -461,6 +519,8 @@ void proc_sleep(void* sleep_space, spinlock_t* lk)
 
     myproc()->sleep_space=sleep_space;
     myproc()->state=SLEEPING;
+    uint64 ticks=timer_get_ticks();
+    myproc()->total_exec_time+=ticks-myproc()->begin_running_time;
 
     proc_sched();
 
@@ -484,8 +544,8 @@ void proc_wakeup(void* sleep_space)
         spinlock_acquire(&(p->lk));
         if(p->state==SLEEPING && p->sleep_space==sleep_space)
         {
-            // 只需要简单地将他的状态设置为RUNNABLE即可
             p->state=RUNNABLE;
+            p->begin_runnable_time=timer_get_ticks();
         }
         spinlock_release(&(p->lk));
     }
