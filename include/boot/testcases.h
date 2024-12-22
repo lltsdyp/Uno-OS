@@ -550,7 +550,29 @@ int main()
     return 0;
 }
 
-// #elif defined LAB_9_CASE_1
+#elif defined LAB_9_CASE_1
+
+
+#include "sys.h"
+
+int main()
+{
+    char path[] = "./test";
+    char* argv[] = {"hello", "world", 0};
+
+    int pid = syscall(SYS_fork);
+    if(pid < 0) { // 失败
+        syscall(SYS_write, 0, 20, "initcode: fork fail\n");
+    } else if(pid == 0) { // 子进程
+        syscall(SYS_write, 0, 22, "\n-----test start-----\n");
+        syscall(SYS_exec, path, argv);
+    } else { // 父进程
+        syscall(SYS_wait, 0);
+        syscall(SYS_write, 0, 21, "\n-----test over-----\n");
+        while(1);
+    }
+    return 0;
+}
 
 #elif defined LAB_9_CASE_2
 
@@ -598,7 +620,7 @@ static void try_to_print_dir(char* path, char* dirname)
     printf("%s ",dirname);
     int fd = try_to_open(path, MODE_READ);
     dirlen = sys_getdir(fd, dirents, sizeof(dirents));
-    dir_print(dirents, dirlen / sizeof(dirent_t));
+    print_dirents(dirents, dirlen / sizeof(dirent_t));
     sys_close(fd);
 }
 

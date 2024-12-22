@@ -2,6 +2,7 @@
 
 #include "memlayout.h"
 #include "lib/lock.h"
+#include "dev/console.h"
 
 // the UART control registers.
 // some have different meanings for

@@ -68,7 +68,7 @@ uint32 console_read(uint32 len, uint64 dst, bool user)
         if(user)
             uvm_copyout(p->pgtbl, dst, (uint64)&cbuf, 1);
         else
-            memmove((void*)dst, &cbuf, 1);
+            memcpy((void*)dst, &cbuf, 1);
         
         // 迭代
         dst++;
@@ -91,11 +91,11 @@ uint32 console_write(uint32 len, uint64 src, bool user)
 
     spinlock_acquire(&cons.lk);
     while(len > 0) {
-        cutlen = MIN(CONSOLE_OUTPUT_BUF, len);
+        cutlen = CONSOLE_OUTPUT_BUF<len?CONSOLE_OUTPUT_BUF:len;
         if(user)
             uvm_copyin(p->pgtbl, (uint64)tmp, src, cutlen);
         else
-            memmove(tmp, (void*)src, cutlen);
+            memcpy(tmp, (void*)src, cutlen);
         
         for(uint32 i = 0; i < cutlen; i++)
             console_putchar(tmp[i]);

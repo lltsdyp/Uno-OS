@@ -42,8 +42,10 @@ int proc_exec(char* path, char** argv)
     pgtbl_t old_pgtbl = p->pgtbl;
     mmap_region_t* old_mmap = p->mmap;
 
-    // 建立新进程的页表
-    pgtbl_t pgtbl = proc_pgtbl_init((uint64)(p->tf));
+    // 建立新进程的页表 + trapframe
+    trapframe_t* tf = (trapframe_t*)pmem_alloc(false);
+    memcpy(tf, p->tf, PGSIZE);
+    pgtbl_t pgtbl = proc_pgtbl_init((uint64)(tf));
 
 //------------------------------- 静态数据区 + 代码区 ----------------------------------
 
@@ -51,7 +53,6 @@ int proc_exec(char* path, char** argv)
     inode_t* ip = path_to_inode(path);
     if(ip == NULL) return -1;
     inode_lock(ip);
-
 
     // 读取elf_header并检查魔数
     elf_header_t eh;
@@ -141,12 +142,12 @@ int proc_exec(char* path, char** argv)
     uvm_copyout(pgtbl, sp, (uint64)sp_list, arg_len);
 
     // int main(int argc, char* argv[])
-    p->tf->a1 = sp;
+    tf->a1 = sp;
 
 // --------------------- 旧地址空间的销毁 + 新地址空间的设置 ----------------------------
 
-    p->tf->epc = eh.entry; // pc
-    p->tf->sp = sp;        // sp
+    tf->epc = eh.entry; // pc
+    tf->sp = sp;        // sp
 
     // 释放用户地址空间 + 释放占用的mmap结构体
     uvm_destroy_pgtbl(old_pgtbl);
@@ -158,8 +159,9 @@ int proc_exec(char* path, char** argv)
         tmp = tmp_next;
     }
 
-    // 设置新的地址空间 + 申请mmap结构体
+    // 设置新的地址空间 + trapframe + 申请mmap结构体
     p->pgtbl = pgtbl;
+    p->tf = tf;
     p->mmap = mmap_region_alloc(true);
 
 // ------------------------- 正常返回 or 异常返回 --------------------

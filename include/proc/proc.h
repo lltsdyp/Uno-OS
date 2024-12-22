@@ -3,6 +3,8 @@
 
 #include "common.h"
 #include "lib/lock.h"
+#include "fs/inode.h"
+#include "fs/file.h"
 
 // 页表类型定义
 typedef uint64* pgtbl_t;
