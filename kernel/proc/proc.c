@@ -269,7 +269,7 @@ int proc_fork()
     // 拷贝页表
     uvm_copy_pgtbl(myproc()->pgtbl,new_proc->pgtbl,myproc()->heap_top,myproc()->ustack_pages,myproc()->mmap);
 
-    new_proc->mmap=mmap_region_alloc();
+    new_proc->mmap=mmap_region_alloc(false);
     mmap_region_t *new_region=new_proc->mmap;
     // 拷贝mmap链
     for(mmap_region_t *region=myproc()->mmap;region!=NULL;region=region->next)
@@ -277,7 +277,7 @@ int proc_fork()
         new_region->begin=region->begin;
         new_region->npages=region->npages;
         if(region->next!=NULL){
-            new_region->next=mmap_region_alloc();
+            new_region->next=mmap_region_alloc(false);
         }
         else{
             new_region->next=NULL;

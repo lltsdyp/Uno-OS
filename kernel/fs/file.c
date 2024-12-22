@@ -17,10 +17,15 @@ dev_t devlist[N_DEV];
 file_t ftable[N_FILE];
 spinlock_t lk_ftable;
 
+// flags 可能取值
+#define LSEEK_SET 0  // file->offset = offset
+#define LSEEK_ADD 1  // file->offset += offset
+#define LSEEK_SUB 2  // file->offset -= offset
+
 // ftable初始化 + devlist初始化
 void file_init()
 {
-    spinlock_init(&lk_ftable);
+    spinlock_init(&lk_ftable,"file table lock");
 }
 
 // alloc file_t in ftable
@@ -53,6 +58,7 @@ file_t* file_create_dev(char* path, uint16 major, uint16 minor)
     dev_file->ip=dev_inode;
     dev_file->major=major;
     // TODO:是否有BUG？
+    return dev_file;
 }
 
 // 打开一个文件
@@ -73,13 +79,13 @@ file_t* file_open(char* path, uint32 open_mode)
     else
     {
         file_inode=path_to_inode(path);
-        if(!ip)
+        if(!file_inode)
             return NULL;
 
         inode_lock(file_inode);
     }
 
-    assert(!(file_inode->disk_inode.type == FT_DEVICE && file_inode->disk_inode.major>=NDEV),"Invalid device file");
+    assert(!(file_inode->disk_inode.type == FT_DEVICE && file_inode->disk_inode.major>=N_DEV),"Invalid device file");
 
     // 第二步：填充file_t结构体
 
@@ -134,7 +140,7 @@ uint32 file_read(file_t* file, uint32 len, uint64 dst, bool user)
         case FD_FILE: // fall through
         case FD_DIR:
         inode_lock(file->ip);
-        count =inode_read_data(file->ip, file->offset, len, dst, user);
+        count =inode_read_data(file->ip, file->offset, len, (void *)dst, user);
         if(count!=-1)
             file_lseek(file, count, LSEEK_ADD);
         inode_unlock(file->ip);
@@ -165,13 +171,13 @@ uint32 file_write(file_t* file, uint32 len, uint64 src, bool user)
         case FD_FILE:
         case FD_DIR:
         inode_lock(file->ip);
-        count=inode_write_data(file->ip, file->offset, len, src, user);
+        count=inode_write_data(file->ip, file->offset, len, (void *)src, user);
         if(count!=-1)
             file_lseek(file, count, LSEEK_ADD);
         inode_unlock(file->ip);
         break;
         case FD_DEVICE:
-        assert(file->major<NDEV, "file_write: invalid device");
+        assert(file->major<N_DEV, "file_write: invalid device");
         count=devlist[file->major].write(len, src, user);
         break;
         default:
@@ -180,10 +186,6 @@ uint32 file_write(file_t* file, uint32 len, uint64 src, bool user)
     return count;
 }
 
-// flags 可能取值
-#define LSEEK_SET 0  // file->offset = offset
-#define LSEEK_ADD 1  // file->offset += offset
-#define LSEEK_SUB 2  // file->offset -= offset
 
 // 修改file->offset (只针对FD_FILE类型的文件)
 uint32 file_lseek(file_t* file, uint32 offset, int flags)
@@ -223,10 +225,10 @@ int file_stat(file_t* file, uint64 addr)
     if(file->type == FD_FILE || file->type == FD_DIR)
     {
         inode_lock(file->ip);
-        state.type = file->ip->type;
+        state.type = file->ip->disk_inode.type;
         state.inode_num = file->ip->inode_num;
-        state.nlink = file->ip->nlink;
-        state.size = file->ip->size;
+        state.nlink = file->ip->disk_inode.nlink;
+        state.size = file->ip->disk_inode.size;
         inode_unlock(file->ip);
 
         uvm_copyout(myproc()->pgtbl, addr, (uint64)&state, sizeof(file_state_t));

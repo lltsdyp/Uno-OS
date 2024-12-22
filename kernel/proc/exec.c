@@ -64,7 +64,7 @@ int proc_exec(char* path, char** argv)
     // 根据program header table载入ELF文件的各个segment
     // 讲各个segment填充到用户的地址空间
     program_header_t ph;
-    uint64 new_heap_top = 0, heap_top = USER_BASE;
+    uint64 new_heap_top = 0, heap_top = USER_VMEM_START;
     for(uint32 off = eh.ph_off; off < eh.ph_off + eh.ph_ent_num * sizeof(ph); off += sizeof(ph))
     {
         // 读取一个program header
@@ -98,7 +98,7 @@ int proc_exec(char* path, char** argv)
     ip = NULL;
 
     // 设置heap_top
-    p->heap_top = ALIGN_UP(heap_top, PGSIZE);
+    p->heap_top = PGROUNDUP(heap_top);
 
 // ------------------------------------ 用户栈 -----------------------------------------------
 
@@ -150,7 +150,7 @@ int proc_exec(char* path, char** argv)
     tf->sp = sp;        // sp
 
     // 释放用户地址空间 + 释放占用的mmap结构体
-    uvm_destroy_pgtbl(old_pgtbl);
+    uvm_destroy_pgtbl(old_pgtbl,3);
     mmap_region_t *tmp = old_mmap, *tmp_next;
     while (tmp)
     {
@@ -169,7 +169,7 @@ int proc_exec(char* path, char** argv)
 
 bad:
     if(pgtbl)
-        uvm_destroy_pgtbl(pgtbl);
+        uvm_destroy_pgtbl(pgtbl,3);
     if(ip)
         inode_unlock_free(ip);
     panic("exec fail");

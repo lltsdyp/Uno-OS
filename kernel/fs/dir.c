@@ -8,6 +8,7 @@
 #include "proc/cpu.h"
 #include "fs/file.h"
 #include "fs/dinode.h"
+#include "mem/pmem.h"
 
 static bool check_unlink(inode_t* ip);
 
