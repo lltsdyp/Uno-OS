@@ -541,11 +541,216 @@ int main()
 
 #include "sys.h"
 #include "type.h"
+
 int main()
 {
     syscall(SYS_print,"Jump to initcode.\n");
     
     while(1);
+    return 0;
+}
+
+// #elif defined LAB_9_CASE_1
+
+#elif defined LAB_9_CASE_2
+
+// 来自 test.c
+// 测试目的: 检测printf的正确性 + exec的传参能力
+#include "userlib.h"
+
+int main(int argc, char* argv[])
+{
+    printf("\nchild arguments: ");
+    for(int i = 0; i < argc; i++)
+        printf("%s ", argv[i]);
+    printf("\n");
+    return 0;
+}
+
+#elif defined LAB_9_CASE_3
+
+#include "userlib.h"
+
+static int try_to_open(char* path, uint32 mode)
+{
+    int fd = sys_open(path, mode);
+    if(fd < 0) {
+        printf("open %s fail\n", path);
+        while(1);
+    }
+    return fd;
+}
+
+static void try_to_mkdir(char* path)
+{
+    int ret = sys_mkdir(path);
+    if(ret < 0) {
+        printf("mkdir %s fail\n", path);
+        while(1);
+    }
+}
+
+static dirent_t dirents[10];
+static uint32 dirlen;
+
+static void try_to_print_dir(char* path, char* dirname)
+{
+    printf("%s ",dirname);
+    int fd = try_to_open(path, MODE_READ);
+    dirlen = sys_getdir(fd, dirents, sizeof(dirents));
+    dir_print(dirents, dirlen / sizeof(dirent_t));
+    sys_close(fd);
+}
+
+int main(int argc, char* argv[])
+{
+    int ret = 0, fd = 0;
+
+    // 输出根目录内容
+    try_to_print_dir(".", "root");
+
+    // 在根目录下创建workdir
+    // 在workdir下创建student和teacher目录和hello.txt文件
+    // 输出workdir的目录项
+    try_to_mkdir("/workdir");
+    try_to_mkdir("/workdir/student");
+    try_to_mkdir("/workdir/teacher");
+    fd = try_to_open("./workdir/hello.txt", MODE_CREATE | MODE_READ | MODE_WRITE);
+    sys_close(fd);
+    try_to_print_dir(".", "root");
+    try_to_print_dir("/workdir", "workdir");
+
+    // 修改当前目录项并测试修改是否生效
+    ret = sys_chdir("./workdir/student");
+    if(ret < 0) {
+        printf("chdir fail\n");
+        while(1);
+    }
+    try_to_print_dir("..", "workdir");
+    try_to_print_dir("././../..","root");
+
+    return 0;
+}
+
+#elif defined LAB_9_CASE_4
+
+#include "userlib.h"
+
+static int try_to_open(char* path, uint32 mode)
+{
+    int fd = sys_open(path, mode);
+    if(fd < 0) {
+        printf("open %s fail\n", path);
+        while(1);
+    }
+    return fd;
+}
+
+int main(int argc, char* argv[])
+{
+    int ret = 0, fd = 0;
+
+    char str[] = "hello wrold";
+    char tmp[15];
+
+    // 创建文件 + 简单读写 + 指针移动 + 文件状态检查
+
+    fd = try_to_open("./hello.txt", MODE_WRITE | MODE_READ | MODE_CREATE);
+    ret = sys_write(fd, strlen(str), str);
+    printf("write_len = %d\n", ret);
+    
+    sys_lseek(fd, 11, LSEEK_SUB);
+    ret = sys_read(fd, 10, tmp);
+    tmp[ret] = 0;
+    printf("read_len = %d read = %s\n", ret, tmp);
+
+    sys_lseek(fd, 6, LSEEK_SET);
+    ret = sys_read(fd, 10, tmp);
+    tmp[ret] = 0;
+    printf("read_len = %d read = %s\n", ret, tmp);
+
+    fstat_t fstate;
+    sys_fstat(fd, &fstate);
+    print_filestate(&fstate);
+
+    sys_close(fd);
+
+    return 0;
+}
+
+#elif defined LAB_9_CASE_5
+
+#include "userlib.h"
+
+static int try_to_open(char* path, uint32 mode)
+{
+    int fd = sys_open(path, mode);
+    if(fd < 0) {
+        printf("open %s fail\n", path);
+        while(1);
+    }
+    return fd;
+}
+
+static dirent_t dirents[10];
+static uint32 dirlen;
+
+static void try_to_print_dir(char* path, char* dirname)
+{
+    printf("%s ",dirname);
+    int fd = try_to_open(path, MODE_READ);
+    dirlen = sys_getdir(fd, dirents, sizeof(dirents));
+    print_dirents(dirents, dirlen / sizeof(dirent_t));
+    sys_close(fd);
+}
+
+int main(int argc, char* argv[])
+{
+    int ret = 0, fd = 0, new_fd = 0;
+    char tmp1[10], tmp2[10];
+
+    // 测试 sys_dup
+    
+    fd = sys_dup(STD_OUT);
+    sys_write(fd, 16, "sys_dup success\n");
+    sys_close(fd);
+
+    // 测试 sys_link
+    
+    fd = try_to_open("hello.txt", MODE_READ | MODE_WRITE | MODE_CREATE);
+    sys_write(fd, 12, "hello world\n");
+    sys_lseek(fd, 6, LSEEK_SET);
+
+    ret = sys_link("hello.txt", "world.txt");
+    if(ret < 0) {
+        printf("link fail\n");
+        while(1);
+    }
+
+    new_fd = try_to_open("world.txt", MODE_READ);
+    
+    sys_read(fd, 5, tmp1);
+    sys_read(new_fd, 5, tmp2);
+    printf("%s %s\n", tmp1, tmp2);
+
+    // 测试 sys_unlink
+    
+    try_to_print_dir(".", "root");
+
+    fstat_t fstate;
+    sys_fstat(fd, &fstate);
+    print_filestate(&fstate);
+    sys_unlink("world.txt");
+
+    sys_fstat(fd, &fstate);
+    print_filestate(&fstate);
+    sys_unlink("hello.txt");
+
+    sys_close(fd);
+    sys_close(new_fd);
+
+    try_to_print_dir(".", "root");
+
     return 0;
 }
 

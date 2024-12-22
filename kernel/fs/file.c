@@ -58,7 +58,7 @@ file_t* file_create_dev(char* path, uint16 major, uint16 minor)
 // 打开一个文件
 file_t* file_open(char* path, uint32 open_mode)
 {
-    inode_t *file_inode=NULLL;
+    inode_t *file_inode=NULL;
 
     // 第一步：从磁盘中找到（或创建）对应的inode，找不到返回-1
 
