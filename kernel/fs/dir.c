@@ -9,6 +9,8 @@
 #include "fs/file.h"
 #include "fs/dinode.h"
 
+static bool check_unlink(inode_t* ip);
+
 // 对目录文件的简化性假设: 每个目录文件只包括一个block
 // 也就是每个目录下最多 BLOCK_SIZE / sizeof(dirent_t) = 32 个目录项
 
@@ -263,7 +265,7 @@ inode_t* path_create_inode(char* path, uint16 type, uint16 major, uint16 minor)
     }
 
     // 创建一个新的 inode
-    ip = inode_creat(type, major, minor);
+    ip = (inode_t*)inode_create(type, major, minor);
     if (ip == NULL) {
         inode_unlock_free(dp);
         return NULL;  // inode 分配失败
@@ -339,7 +341,7 @@ uint32 path_unlink(char* path)
 {
     char name[DIR_NAME_LEN];
     inode_t *ip, *dp;
-    dirent_t de;
+    uint16 inode_num;
 
     // 查找路径对应的父目录和文件名
     if ((dp = path_to_pinode(path, name)) == NULL)
@@ -354,7 +356,7 @@ uint32 path_unlink(char* path)
     }
 
     // 查找目录项，得到对应的 inode
-    if ((ip = dir_search_entry(dp, name)) == INODE_NUM_UNUSED) {
+    if ((inode_num = dir_search_entry(dp, name)) == INODE_NUM_UNUSED) {
         inode_unlock_free(dp);
         return -1;  // 目录项不存在
     }
@@ -363,7 +365,7 @@ uint32 path_unlink(char* path)
     assert(ip->disk_inode.nlink >= 1, "path_unlink: nlink < 1");
 
     // 如果是目录，但是目录不为空
-    if (ip->disk_inode.type == FT_DIR && !check_unlink(ip)) {
+    if ((ip->disk_inode.type == FT_DIR) && !check_unlink(ip)) {
         inode_unlock_free(ip);
         inode_unlock_free(dp);
         return -1;
@@ -371,7 +373,7 @@ uint32 path_unlink(char* path)
 
 
     // 删除目录项
-    uint16 inode_num = dir_delete_entry(dp, name);
+    inode_num = dir_delete_entry(dp, name);
     if (inode_num == INODE_NUM_UNUSED) {
         inode_unlock_free(ip);
         return -1;  // 删除失败
