@@ -6,6 +6,8 @@
 #include "lib/str.h"
 #include "lib/print.h"
 #include "proc/cpu.h"
+#include "fs/file.h"
+#include "fs/dinode.h"
 
 // 对目录文件的简化性假设: 每个目录文件只包括一个block
 // 也就是每个目录下最多 BLOCK_SIZE / sizeof(dirent_t) = 32 个目录项
@@ -240,78 +242,94 @@ inode_t* path_to_pinode(char* path, char* name)
 // 如果path对应的inode不存在则创建inode
 // 失败返回NULL
 inode_t* path_create_inode(char* path, uint16 type, uint16 major, uint16 minor)
+
 {
     char name[DIR_NAME_LEN];
-    inode_t *pip = path_to_pinode(path, name);  // 查找父目录 inode
-    if (pip == NULL) 
-        return NULL;  // 父目录不存在
+    inode_t *dp = path_to_pinode(path, name);  // 查找父目录 inode和文件名
+    if (dp == 0) 
+        return 0;  // 父目录不存在
 
-    inode_lock(pip)
+    inode_lock(dp);
 
     inode_t *ip = path_to_inode(path);
-
-    // path对应的inode存在
     if (ip != NULL)
-        return ip;
+    {
+        inode_unlock_free(dp);
+        inode_lock(ip);
+        if(type == FD_FILE && (ip->disk_inode.type == FD_FILE || ip->disk_inode.type == FD_DEVICE))
+            return ip;
+        inode_unlock_free(ip);
+        return 0;
+    }
 
     // 创建一个新的 inode
     ip = inode_creat(type, major, minor);
     if (ip == NULL) {
-        inode_unlock_free(pip);
+        inode_unlock_free(dp);
         return NULL;  // inode 分配失败
     }
+    inode_lock(ip);
+    inode_rw(ip, 1);
 
-    // 将新 inode 添加到父目录
-    uint32 offset = dir_add_entry(pip, ip->inode_num, name);
-    if (offset == BLOCK_SIZE) {
-        inode_free(ip);
-        inode_unlock_free(pip);
-        return NULL;  // 目录没有空间，添加失败
+    if(type == FD_DIR)
+    {
+        dp->disk_inode.nlink++;
+        inode_rw(dp, 1);
+
+        assert((dir_add_entry(ip, ip->inode_num, ".") != BLOCK_SIZE && 
+            dir_add_entry(ip, dp->inode_num, "..") != BLOCK_SIZE), 
+            "path_creat_inode: . and .. fail");
     }
 
-    inode_unlock_free(pip);
-    return ip;  // 返回新创建的 inode
+    assert(dir_add_entry(dp, ip->inode_num, name) != BLOCK_SIZE, "path_creat_inode: add ip to pip failed");
+    inode_unlock_free(dp);
+    return ip;
 }
 
-// 文件链接(目录不能被链接)
-// 本质是创建一个目录项, 这个目录项的inode_num是存在的而不用申请
-// 成功返回0 失败返回-1
 uint32 path_link(char* old_path, char* new_path)
 {
-    char old_name[DIR_NAME_LEN], new_name[DIR_NAME_LEN];
+    char name[DIR_NAME_LEN];
+    inode_t *ip, *dp;
 
-    inode_t *old_inode = path_to_inode(old_path);  // 查找已有文件的 inode
-    if (old_inode == NULL) 
+    // 查找旧路径对应的 inode
+    ip = path_to_inode(old_path);  
+    if (ip == NULL) 
         return -1;  // 旧路径对应的文件不存在
 
-    // 查找新路径的父目录
-    inode_t *new_parent_inode = path_to_pinode(new_path, new_name);
-    if (new_parent_inode == NULL) {
-        inode_free(old_inode);
+    inode_lock(ip);
+    if (ip->disk_inode.type == FD_DIR) {  // 目录不能被链接
+        inode_unlock_free(ip);
+        return -1;
+    }
+
+    ip->disk_inode.nlink++;  // 增加链接数
+    inode_rw(ip, 1);
+    inode_unlock(ip);
+
+    // 查找新路径的父目录 inode
+    dp = path_to_pinode(new_path, name);
+    if (dp == NULL) {
+        inode_lock(ip);
+        ip->disk_inode.nlink--;
+        inode_rw(ip, 1);
+        inode_unlock_free(ip);
         return -1;  // 新路径的父目录不存在
     }
 
-    inode_lock(new_parent_inode);
-    
-    // 在目标目录中查找是否已有同名的文件
-    if (dir_search_entry(new_parent_inode, new_name) != INODE_NUM_UNUSED) {
-        inode_unlock_free(new_parent_inode);
-        inode_free(old_inode);
-        return -1;  // 目标目录中已存在该文件
+    inode_lock(dp);
+
+    // 在新路径的父目录下添加旧文件的目录项
+    if (dir_add_entry(dp, ip->inode_num, name) == BLOCK_SIZE) {
+        inode_unlock_free(dp);
+        // 失败，恢复旧文件的链接数
+        inode_lock(ip);
+        ip->disk_inode.nlink--;
+        inode_unlock_free(ip);
+        return -1;
     }
 
-    // 在目标目录中添加该目录项
-    uint32 offset = dir_add_entry(new_parent_inode, old_inode->inode_num, new_name);
-    if (offset == BLOCK_SIZE) {
-        inode_unlock_free(new_parent_inode);
-        inode_free(old_inode);
-        return -1;  // 目标目录没有空间，添加失败
-    }
-
-    old_inode->disk_inode.size += sizeof(dirent_t);
-
-    inode_unlock_free(new_parent_inode);
-    inode_free(old_inode);
+    inode_unlock_free(dp);
+    inode_free(ip);
     return 0;  // 链接成功
 }
 
@@ -320,47 +338,64 @@ uint32 path_link(char* old_path, char* new_path)
 uint32 path_unlink(char* path)
 {
     char name[DIR_NAME_LEN];
-    inode_t *pip, *ip;
+    inode_t *ip, *dp;
+    dirent_t de;
+
+    // 查找路径对应的父目录和文件名
+    if ((dp = path_to_pinode(path, name)) == NULL)
+        return -1;  // 父目录不存在
+
+    inode_lock(dp);  // 锁住父目录
+
+    // 不允许删除 "." 或 ".." 目录
+    if (strncmp(name, ".", DIR_NAME_LEN) == 0 || strncmp(name, "..", DIR_NAME_LEN) == 0) {
+        inode_unlock_free(dp);
+        return -1;
+    }
+
+    // 查找目录项，得到对应的 inode
+    if ((ip = dir_search_entry(dp, name)) == INODE_NUM_UNUSED) {
+        inode_unlock_free(dp);
+        return -1;  // 目录项不存在
+    }
     
-    // 找到父目录及目标文件名
-    pip = path_to_pinode(path, name);
-    if (pip == NULL) 
-        return -1;  // 无效路径
-    inode_lock(pip);
+    inode_lock(ip);      // 锁住 inode
+    assert(ip->disk_inode.nlink >= 1, "path_unlink: nlink < 1");
 
-    // 获取目标 inode
-    ip = path_to_inode(path);
-    if (ip == NULL) {
-        inode_unlock_free(pip);
-        return -1;  // 获取目标 inode 失败
+    // 如果是目录，但是目录不为空
+    if (ip->disk_inode.type == FT_DIR && !check_unlink(ip)) {
+        inode_unlock_free(ip);
+        inode_unlock_free(dp);
+        return -1;
     }
 
-    // 检查目标 inode 是否符合删除条件
-    if (!check_unlink(ip)) {
-        inode_free(ip);
-        inode_unlock_free(pip);
-        return -1;  // 删除条件不符
-    }
 
-    // 删除父目录中的目录项
-    if (dir_delete_entry(pip, name) == INODE_NUM_UNUSED) {
-        inode_free(ip);
-        inode_unlock_free(pip);
+    // 删除目录项
+    uint16 inode_num = dir_delete_entry(dp, name);
+    if (inode_num == INODE_NUM_UNUSED) {
+        inode_unlock_free(ip);
         return -1;  // 删除失败
     }
+
+    if(ip->disk_inode.type == FD_DIR)
+    {
+        dp->disk_inode.nlink--;
+        inode_rw(dp, 1);
+    }
+    inode_unlock_free(dp);
+
+    // 递减 inode 的链接数
+    ip->disk_inode.nlink--;
+    inode_rw(ip, 1);
+    inode_unlock_free(ip);
     
-    // 更新父目录大小
-    pip->disk_inode.size -= sizeof(dirent_t);
-
-    inode_free(ip);
-    inode_unlock_free(pip);
-    return 0;  // 成功删除
+    return 0;  // 删除成功
 }
-
 
 // 检查一个unlink操作是否合理
 // 调用者需要持有ip的锁
 // 在path_unlink()中调用
+// 检查目录是否为空
 static bool check_unlink(inode_t* ip)
 {
     assert(sleeplock_holding(&ip->slk), "check_unlink: slk");
