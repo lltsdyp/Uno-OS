@@ -8,7 +8,6 @@
 #include "proc/cpu.h"
 #include "fs/file.h"
 #include "fs/dinode.h"
-#include "mem/pmem.h"
 
 static bool check_unlink(inode_t* ip);
 
@@ -460,4 +459,27 @@ uint32 dir_get_entries(inode_t *pip, uint32 len, void* dst, bool user)
     buf_release(buf);  // 释放缓冲区
 
     return bytes_read;  // 返回实际读取的字节数
+}
+
+// 改变进程里存储的当前目录
+// 成功返回0，失败返回-1
+uint32 dir_change(char *path)
+{
+    char name[DIR_NAME_LEN];
+    
+    inode_t *ip = path_to_inode(path);
+    if (ip == NULL) 
+        return -1; 
+
+    inode_lock(ip);  // 锁住找到的 inode
+    if (ip->disk_inode.type != FT_DIR) {
+        inode_unlock_free(ip);
+        return -1;
+    }
+
+    proc_t *p = my_proc();
+    p->cwd = ip;  // 更新进程的当前工作目录
+
+    inode_unlock_free(ip); 
+    return 0;
 }
