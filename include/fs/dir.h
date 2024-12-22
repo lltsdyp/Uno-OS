@@ -24,6 +24,7 @@ inode_t* path_create_inode(char* path, uint16 type, uint16 major, uint16 minor);
 uint32   path_link(char* old_path, char* new_path); 
 uint32   path_unlink(char* path); 
 
+uint32 dir_get_entries(inode_t *pip, uint32 len, void* dst, bool user);
 
 #endif
 // TODO!

@@ -141,7 +141,7 @@ uint32 file_read(file_t* file, uint32 len, uint64 dst, bool user)
         break;
 
         case FD_DEVICE:
-        assert(file->major<NDEV, "file_write: invalid device");
+        assert(file->major<N_DEV, "file_write: invalid device");
         count=devlist[file->major].read(len, dst, user);
         break;
 

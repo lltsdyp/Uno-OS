@@ -361,6 +361,7 @@ uint32 path_unlink(char* path)
         return -1;  // 目录项不存在
     }
     
+    ip = inode_get(inode_num);
     inode_lock(ip);      // 锁住 inode
     assert(ip->disk_inode.nlink >= 1, "path_unlink: nlink < 1");
 
@@ -415,4 +416,47 @@ static bool check_unlink(inode_t* ip)
         panic("check_unlink: read_len");
         return false;
     }
+}
+
+// 把目录下的有效目录项复制到dst(dst长度为len)
+// 返回读到的字节数(sizeof(dirent_t)*n)
+// 调用者需要持有pip的锁
+uint32 dir_get_entries(inode_t *pip, uint32 len, void* dst, bool user)
+{
+    assert(sleeplock_holding(&pip->slk), "dir_get_entries: lock");
+    buf_t *buf;
+    dirent_t *de;
+    uint32 offset, bytes_read;
+
+    // 如果目录为空，直接返回0
+    if (pip->disk_inode.addrs[0] == 0) 
+        return 0;
+
+    buf = buf_read(pip->disk_inode.addrs[0]);  // 读取目录的第一个数据块
+    bytes_read = 0;
+
+    // 遍历目录项并将有效的目录项复制到 dst
+    for (offset = 0; offset < BLOCK_SIZE && bytes_read < len; offset += sizeof(dirent_t))
+    {
+        de = (dirent_t *)(buf->data + offset);
+
+        if (de->name[0] == 0) {
+            continue;  // 空目录项跳过
+        }
+
+        // 将有效的目录项复制到 dst 中
+        uint32 copy_size = sizeof(dirent_t);
+        if (bytes_read + copy_size > len) {
+            // 如果剩余空间不足以拷贝一个完整的 dirent_t，退出
+            break;
+        }
+
+        // 复制目录项到目标地址
+        memcpy((uint8 *)dst + bytes_read, de, copy_size);
+        bytes_read += copy_size;
+    }
+
+    buf_release(buf);  // 释放缓冲区
+
+    return bytes_read;  // 返回实际读取的字节数
 }
