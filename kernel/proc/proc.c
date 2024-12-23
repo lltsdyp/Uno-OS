@@ -208,11 +208,8 @@ void proc_free(proc_t* p)
         mmap_region_free(prev_region);
     }
     // 可能需要清空页表
-    if(p->pgtbl!=NULL){
-        vm_unmappages(p->pgtbl, TRAPFRAME, PGSIZE, false);
-        vm_unmappages(p->pgtbl, TRAMPOLINE, PGSIZE, false);
+    if(p->pgtbl!=NULL)
         uvm_destroy_pgtbl(p->pgtbl,3);
-    }
 
     // 清空所有字段
     p->pid=-1;

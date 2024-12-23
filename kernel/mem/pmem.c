@@ -73,7 +73,6 @@ void *pmem_alloc(bool in_kernel)
         panic("Failed to allocate physical page!");
     }
 
-    
     return (void *)page;
 }
 

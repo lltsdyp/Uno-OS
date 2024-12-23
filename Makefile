@@ -9,6 +9,9 @@ CPUNUM = 2
 
 .PHONY: clean $(KERN) $(USER) $(MKFS)
 
+UPROGS=\
+	./user/_test\
+
 $(KERN):
 	$(MAKE) build --directory=$@
 
@@ -18,7 +21,7 @@ $(USER):
 
 $(MKFS):
 	$(MAKE) build --directory=$@
-	$(MKFS)/mkfs $(FS_IMG)
+	$(MKFS)/mkfs $(FS_IMG) $(UPROGS)
 
 # QEMU相关配置
 QEMU     =  qemu-system-riscv64
@@ -42,7 +45,7 @@ qemu: clean $(USER) $(KERN) $(MKFS) .gdbinit
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
-qemu-gdb: $(USER) $(KERN) $(MKFS) .gdbinit
+qemu-gdb: clean $(USER) $(KERN) $(MKFS) .gdbinit
 	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
 
 .gdbinit-gui: .gdbinit.tmpl-riscv-gui

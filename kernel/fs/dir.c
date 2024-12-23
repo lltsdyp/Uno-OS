@@ -254,7 +254,7 @@ inode_t* path_create_inode(char* path, uint16 type, uint16 major, uint16 minor)
     inode_lock(dp);
 
     inode_t *ip = path_to_inode(path);
-    if (ip != NULL || ip->inode_num == INODE_NUM_UNUSED)
+    if (ip != NULL && ip->inode_num!=INODE_NUM_UNUSED)
     {
         inode_unlock_free(dp);
         inode_lock(ip);

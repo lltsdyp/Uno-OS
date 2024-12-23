@@ -71,6 +71,10 @@ void uvm_show_mmaplist(mmap_region_t *mmap)
 // ps: 顶级页表level = 3, level = 0 说明是页表管理的物理页
 void uvm_destroy_pgtbl(pgtbl_t pgtbl,uint32 level)
 {
+    if(level==3){
+        vm_unmappages(pgtbl, TRAPFRAME, PGSIZE, false);
+        vm_unmappages(pgtbl, TRAMPOLINE, PGSIZE, false);
+    }
     if(level==0)
     {
         pmem_free((uint64)pgtbl,false);
