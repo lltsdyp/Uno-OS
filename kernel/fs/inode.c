@@ -64,7 +64,7 @@ inode_t *inode_get(uint16 inode_num)
     for (int i = 0; i < I_NODE_CACHE_SIZE; ++i)
     {
         // 找到的情况
-        if (icache[i].inode_num == inode_num && icache[i].inode_num > 0)
+        if (icache[i].inode_num == inode_num )
         {
             ++(icache[i].ref);
             spinlock_release(&lk_icache);

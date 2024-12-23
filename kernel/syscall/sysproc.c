@@ -219,6 +219,5 @@ uint64 sys_exec()
     {
         pmem_free((uint64)argv[i],true);
     }
-    printf("Exec argc data:%d",ret);
     return ret;
 }

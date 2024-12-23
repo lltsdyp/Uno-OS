@@ -189,10 +189,7 @@ static inode_t* search_inode(char* path, char* name, bool find_parent)
     inode_t *ip, *next;
     uint16 inode_num;
     
-    if (*path == '/')
-        ip = inode_get(INODE_ROOT);
-    else 
-        ip = inode_dup(myproc()->cwd);
+    ip = inode_get(INODE_ROOT);
 
     while ((path = skip_element(path, name)) != 0)
     {
