@@ -8,7 +8,7 @@
 
 // 系统调用跳转
 static uint64 (*syscalls[])(void) = {
-    [SYS_print]         sys_print,
+    [SYS_exec]          sys_exec,
     [SYS_brk]           sys_brk,
     [SYS_mmap]          sys_mmap,
     [SYS_munmap]        sys_munmap,

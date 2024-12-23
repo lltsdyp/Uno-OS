@@ -14,6 +14,7 @@ $(KERN):
 
 $(USER):
 	$(MAKE) init --directory=$@
+	$(MAKE) build --directory=$@
 
 $(MKFS):
 	$(MAKE) build --directory=$@

@@ -3,7 +3,7 @@ include ../common.mk
 INCLUDES=../include
 
 ULIB=\
-	user_lib.o\
+	userlib.o\
 	user_syscall.o\
 
 UPROGS=\

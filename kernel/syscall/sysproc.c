@@ -195,10 +195,10 @@ uint64 sys_exec()
         // 首先从用户态获取指针值
         if(!is_valid_addr(arg_addr))
             break;
-        uvm_copyin(myproc()->pgtbl, (uint64)&arg_addr, str_addr, sizeof(uint64));
+        uvm_copyin(myproc()->pgtbl, (uint64)&str_addr, arg_addr, sizeof(uint64));
 
         // 以0作为argv的结束
-        if(arg_addr==0){
+        if(str_addr==0){
             argv[i]=NULL;
 
             ret=proc_exec(path, argv);

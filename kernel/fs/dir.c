@@ -222,7 +222,8 @@ static inode_t* search_inode(char* path, char* name, bool find_parent)
         inode_free(ip);
         return NULL;
     }
-
+    if(ip->inode_num==INODE_NUM_UNUSED)
+        return NULL;
     return ip;  // 返回目标 inode
 }
 

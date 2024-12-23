@@ -4,7 +4,7 @@
 #include "common.h"
 
 // in sysproc.c
-uint64 sys_print();
+uint64 sys_exec();
 uint64 sys_brk();
 uint64 sys_mmap();
 uint64 sys_munmap();

@@ -1,7 +1,7 @@
 #ifndef __SYSNUM_H__
 #define __SYSNUM_H__
 
-#define SYS_print        0
+#define SYS_exec         0
 #define SYS_brk          1
 #define SYS_mmap         2
 #define SYS_munmap       3
