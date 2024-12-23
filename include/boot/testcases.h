@@ -574,6 +574,7 @@ int main()
     //     syscall(SYS_write, 0, 21, "\n-----test over-----\n");
     //     while(1);
     // }
+    while(1);
     return 0;
 }
 

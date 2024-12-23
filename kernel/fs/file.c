@@ -57,6 +57,9 @@ file_t* file_create_dev(char* path, uint16 major, uint16 minor)
     file_t *dev_file=file_alloc();
     dev_file->ip=dev_inode;
     dev_file->major=major;
+    dev_file->readable=true;
+    dev_file->writable=true;
+    dev_file->type=FT_DEVICE;
     // TODO:是否有BUG？
     return dev_file;
 }

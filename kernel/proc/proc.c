@@ -51,7 +51,6 @@ static int alloc_pid()
 // 释放锁 + 调用 trap_user_return
 static void fork_return()
 {
-    // TODO:修改
     // 由于调度器中上了锁，所以这里需要解锁
     proc_t* p = myproc();
     spinlock_release(&p->lk);
@@ -61,6 +60,8 @@ static void fork_return()
         fs_init();  // 初始化文件系统
         p->cwd=path_to_inode("/");
         p->filelist[0]=file_create_dev("console",DEV_CONSOLE,0);
+        p->filelist[0]->readable=true;
+        p->filelist[0]->writable=true;
         p->filelist[1]=file_dup(p->filelist[0]);
     }
 
