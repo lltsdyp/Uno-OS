@@ -559,7 +559,6 @@ int main()
 {
     char path[] = "./test";
     char* argv[] = {"hello", "world", 0};
-    syscall(SYS_write, 0, 5, "Init\n");
 
 
     int pid = syscall(SYS_fork);

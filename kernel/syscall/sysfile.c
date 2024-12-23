@@ -218,6 +218,7 @@ uint64 sys_mkdir()
     arg_str(0, path, DIR_PATH_LEN);
 
     inode_t* inode = path_create_inode(path, FT_DIR, 0, 0);
+    inode_unlock(inode);
 
     return (inode == NULL) ? -1 : 0;
 }
