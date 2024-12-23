@@ -116,13 +116,14 @@ uint16 dir_delete_entry(inode_t *pip, char *name)
         // 匹配目录名
         if ((strncmp(de->name, name, DIR_NAME_LEN)) == 0)
         {
+            uint16 inode_num = de->inode_num;
             de->name[0] = 0;
             de->inode_num = INODE_NUM_UNUSED;
             pip->disk_inode.size -= sizeof(dirent_t);
 
             buf_write(buf);
             buf_release(buf);
-            return de->inode_num; // 返回匹配条目的inode_num
+            return inode_num; // 返回匹配条目的inode_num
         }
     }
 
