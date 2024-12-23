@@ -40,7 +40,8 @@ void syscall()
     if(syscall_num >= 0 && syscall_num < sizeof(syscalls)/sizeof(syscalls[0]) 
         && syscalls[syscall_num])
     {
-        p->tf->a0 = syscalls[syscall_num]();
+        uint64 ret=syscalls[syscall_num]();
+        p->tf->a0=ret;
     }
     else
     {

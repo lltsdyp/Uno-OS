@@ -142,7 +142,7 @@ int proc_exec(char* path, char** argv)
     uvm_copyout(pgtbl, sp, (uint64)sp_list, arg_len);
 
     // int main(int argc, char* argv[])
-    tf->a0 = arg_len/sizeof(uint64);
+    // tf->a0 = arg_len/sizeof(uint64);
     tf->a1 = sp;
 
 // --------------------- 旧地址空间的销毁 + 新地址空间的设置 ----------------------------

@@ -7,6 +7,7 @@
 #include "lib/print.h"
 #include "syscall/syscall.h"
 #include "syscall/sysfunc.h"
+#include "mem/pmem.h"
 
 // 获取第n个参数对应的fd和这个fd对应的file
 // 成功返回0 失败返回-1
@@ -194,10 +195,16 @@ uint64 sys_getdir()
 
     if(file->type != FD_DIR || file->ip == NULL)
         return -1;
+    
+    char *buffer=pmem_alloc(true);
 
     inode_lock(file->ip);
-    len = dir_get_entries(file->ip, len, (void*)addr, true);
+    len = dir_get_entries(file->ip, len, (void*)buffer, true);
     inode_unlock(file->ip);
+
+    uvm_copyout(myproc()->pgtbl, addr, (uint64)buffer, len);
+
+    pmem_free((uint64)buffer,true);
 
     return len;
 }
