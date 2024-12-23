@@ -210,7 +210,7 @@ uint64 sys_exec()
             break;
             
         argv[i]=(char*)pmem_alloc(true);
-        uvm_copyin_str(myproc()->pgtbl, (uint64)argv[i], arg_addr, ELF_MAXARG_LEN);
+        uvm_copyin_str(myproc()->pgtbl, (uint64)argv[i], str_addr, ELF_MAXARG_LEN);
 
     }
 
@@ -219,5 +219,6 @@ uint64 sys_exec()
     {
         pmem_free((uint64)argv[i],true);
     }
+    printf("Exec argc data:%d",ret);
     return ret;
 }
