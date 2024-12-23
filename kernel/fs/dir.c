@@ -253,7 +253,7 @@ inode_t* path_create_inode(char* path, uint16 type, uint16 major, uint16 minor)
     inode_lock(dp);
 
     inode_t *ip = path_to_inode(path);
-    if (ip != NULL && ip->inode_num!=INODE_NUM_UNUSED)
+    if (ip != NULL || ip->inode_num == INODE_NUM_UNUSED)
     {
         inode_unlock_free(dp);
         inode_lock(ip);
@@ -265,7 +265,7 @@ inode_t* path_create_inode(char* path, uint16 type, uint16 major, uint16 minor)
 
     // 创建一个新的 inode
     ip = (inode_t*)inode_create(type, major, minor);
-    if (ip == NULL) {
+    if (ip == NULL || ip->inode_num == INODE_NUM_UNUSED) {
         inode_unlock_free(dp);
         return NULL;  // inode 分配失败
     }
@@ -294,7 +294,7 @@ uint32 path_link(char* old_path, char* new_path)
 
     // 查找旧路径对应的 inode
     ip = path_to_inode(old_path);  
-    if (ip == NULL) 
+    if (ip == NULL || ip->inode_num == INODE_NUM_UNUSED) 
         return -1;  // 旧路径对应的文件不存在
 
     inode_lock(ip);
@@ -344,7 +344,7 @@ uint32 path_unlink(char* path)
 
     // 查找路径对应的父目录和文件名
     if ((dp = path_to_pinode(path, name)) == NULL)
-        return -1;  // 父目录不存在
+        return -1; 
 
     inode_lock(dp);  // 锁住父目录
 
@@ -465,7 +465,7 @@ uint32 dir_get_entries(inode_t *pip, uint32 len, void* dst, bool user)
 uint32 dir_change(char *path)
 {    
     inode_t *ip = path_to_inode(path);
-    if (ip == NULL) 
+    if ((ip == NULL) || (ip->inode_num == INODE_NUM_UNUSED)) 
         return -1; 
 
     inode_lock(ip);  // 锁住找到的 inode
