@@ -47,7 +47,6 @@ typedef struct dev {
     uint32 (*write)(uint32 len, uint64 src, bool user_src);
 } dev_t;
 
-
 void    file_init();
 file_t* file_alloc();
 file_t* file_create_dev(char* path, uint16 major, uint16 minor);

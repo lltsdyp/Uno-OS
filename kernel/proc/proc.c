@@ -11,6 +11,7 @@
 #include "riscv.h"
 #include "fs/fs.h"
 #include "dev/timer.h"
+#include "fs/dir.h"
 
 #define RATE_GRADIENT 8
 
@@ -58,6 +59,9 @@ static void fork_return()
     // 仅在第一个进程初始化文件系统
     if (p->pid == 1) {
         fs_init();  // 初始化文件系统
+        p->cwd=path_to_inode("/");
+        p->filelist[0]=file_create_dev("console",DEV_CONSOLE,0);
+        p->filelist[1]=file_dup(p->filelist[0]);
     }
 
     trap_user_return();
@@ -77,7 +81,7 @@ pgtbl_t proc_pgtbl_init(uint64 trapframe)
 
 // 将initcode加载到内存中
 // pgtbl:给定的用户页表
-void load_initcode(pgtbl_t pgtbl)
+static void load_initcode(pgtbl_t pgtbl)
 {
     uint64 addr=0;
 
@@ -464,7 +468,6 @@ void proc_scheduler()
             {
                 p->total_wait_time += ticks - p->begin_runnable_time; // 首先更新他们的等待时间，然后再进行权重计算
                 p->begin_runnable_time=ticks;
-                printf("Proc %d's current weight is %d\n",p->pid,(int)get_weight(p));  // 调试用
 
                 // 下一个要执行的进程就是当前我们检查的proc
                 if(max_weight<get_weight(p))
@@ -486,7 +489,6 @@ void proc_scheduler()
         else
         {
             spinlock_acquire(&(next_p->lk));
-            printf("Proc %d running\n",next_p->pid);
             assert(next_p->state == RUNNABLE, "proc_scheduler: proc is not runnable");
             next_p->state = RUNNING;
             mycpu()->proc = next_p;

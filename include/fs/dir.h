@@ -25,6 +25,7 @@ uint32   path_link(char* old_path, char* new_path);
 uint32   path_unlink(char* path); 
 
 uint32 dir_get_entries(inode_t *pip, uint32 len, void* dst, bool user);
+uint32 dir_change(char *path);
 
 #endif
 // TODO!

@@ -35,13 +35,19 @@ QEMUGDB = $(shell if $(QEMU) -help | grep -q '^-gdb'; \
 build: $(USER) $(KERN) $(MKFS)
 
 # qemu运行
-qemu: $(USER) $(KERN) $(MKFS)
+qemu: clean $(USER) $(KERN) $(MKFS) .gdbinit
 	$(QEMU) $(QEMUOPTS)
 
 .gdbinit: .gdbinit.tmpl-riscv
 	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
 
 qemu-gdb: $(USER) $(KERN) $(MKFS) .gdbinit
+	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
+
+.gdbinit-gui: .gdbinit.tmpl-riscv-gui
+	sed "s/:1234/:$(GDBPORT)/" < $^ > $@
+
+qemu-gdb-gui: clean $(KERN) $(USER) $(MKFS) .gdbinit-gui
 	$(QEMU) $(QEMUOPTS) -S $(QEMUGDB)
 
 clean:

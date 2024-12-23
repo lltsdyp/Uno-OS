@@ -16,7 +16,7 @@ static void copy_range(pgtbl_t old, pgtbl_t new, uint64 begin, uint64 end)
     for (va = begin; va < end; va += PGSIZE)
     {
         pte = vm_getpte(old, va, false);
-        assert(pte != NULL, "uvm_copy_pgtbl: pte == NULL");
+        assert(pte != NULL, "uvm_copy_pgtbl: pte == NULL.\n begin: %p,end %p",begin,end);
         assert((*pte) & PTE_V, "uvm_copy_pgtbl: pte not valid");
         // assert(PTE_CHECK(*pte), "uvm_copy_pgtbl: pte check fail");
 
@@ -84,32 +84,6 @@ void uvm_destroy_pgtbl(pgtbl_t pgtbl,uint32 level)
     }
     
     pmem_free((uint64)pgtbl,true);
-
-    // pte_t pte;
-    // pgtbl_t child;
-    // assert(level<=3,"uvm_destroy_pgtbl: level > 3");
-    // if(level==0)
-    //     goto free;
-    // for (int i = 0; i < PGSIZE / sizeof(pte);i++)
-    // {
-    //     pte = pgtbl[i];
-    //     if(pte & PTE_V)
-    //     {
-    //         if ((level>1)&&(!PTE_CHECK(pte)))
-    //         {
-    //             printf("pte = %p\n", pte);
-    //             panic("uvm_destroy_pgtbl: pte fail");
-    //         }
-    //         child = (pgtbl_t)PTE_TO_PA(pte);
-    //         destroy_pgtbl(child, level - 1);
-    //         pgtbl[i] = 0;
-    //     }
-    // }
-    // free:
-    //     if (level>0)
-    //         pmem_free((uint64)pgtbl, true);
-    //     else
-    //         pmem_free((uint64)pgtbl, false);
 }
 
 // 拷贝页表 (拷贝并不包括trapframe 和 trampoline)

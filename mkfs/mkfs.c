@@ -118,31 +118,6 @@ void inode_write(unsigned short inode_num, inode_disk_t* ip)
     block_write(block_num, buf);
 }
 
-// 申请一个inode (修改bitmap)
-unsigned short inode_alloc()
-{
-    char buf[BLOCK_SIZE];
-    unsigned int byte, shift;
-    unsigned char bit_cmp;
-
-    block_read(sb.inode_bitmap_start, buf);
-    for(byte = 0; byte < BLOCK_SIZE; byte++) {
-        bit_cmp = 1;
-        for(shift = 0; shift <= 7; shift++) {
-            if((bit_cmp & buf[byte]) == 0) {
-                buf[byte] |= bit_cmp;
-                goto find;
-            }
-            bit_cmp = bit_cmp << 1;
-        }
-    }
-    printf("inode_alloc: no bit left\n");
-    while(1);
-find:
-    block_write(sb.inode_bitmap_start, buf);
-    return (unsigned short)(byte * 8 + shift);
-}
-
 // 赋值并写一个inode
 void inode_create_mkfs(inode_disk_t* inode, unsigned int inode_num, unsigned short type)
 {
@@ -291,9 +266,10 @@ int main(int argc, char* argv[])
     memmove(buf, &sb, sizeof(sb));
     block_write(0, buf);
 
-    // 准备根目录
+    // 创建根目录
     inode_disk_t rooti;
     unsigned short root_inum = inode_alloc();
+    unsigned int rooti_block = block_alloc();
     if(root_inum != 0) {
         printf("rooti = %d\n", root_inum);
         while(1);
@@ -323,7 +299,7 @@ int main(int argc, char* argv[])
 
         // 申请新的inode + 创建目录项
         inum = inode_alloc();
-        inode_create(&inode, inum, FT_FILE);
+        inode_create_mkfs(&inode, inum, FT_FILE);
         offset = dirent_create(rooti_block, offset, shortname, inum);
         
         // 打开文件
@@ -354,9 +330,9 @@ int main(int argc, char* argv[])
 
     // 更新rooti
     rooti.addrs[0] = xint(rooti_block);
-    rooti.type=xshort(FT_DIR);
-    rooti.size = xint(sizeof(dirent_t) * 2);
+    rooti.size = xint(sizeof(dirent_t) * argc);
     inode_write(root_inum, &rooti);
+
 
     return 0;
 }

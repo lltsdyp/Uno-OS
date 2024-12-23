@@ -12,13 +12,14 @@
 #include "fs/fs.h"
 #include "proc/elf.h"
 #include "memlayout.h"
+#include "fs/dir.h"
 
 // 检查是否位于有效的内存地址
 int is_valid_addr(uint64 addr)
 {
     // 首先检查是否位于堆区或者静态代码/数据区
     if(addr>=USER_VMEM_START&&addr+sizeof(uint64)<myproc()->heap_top)
-        return 1
+        return 1;
 
     // 然后检查是否位于mmap区
     for(mmap_region_t* node=myproc()->mmap->next; node!=NULL; node=node->next)
@@ -72,7 +73,7 @@ uint64 sys_brk()
     else if (new_heap_top > p->heap_top)
     {
         size = new_heap_top - p->heap_top;
-        p->heap_top = uvm_heap_grow(p->pgtbl, p->heap_top, size);
+        p->heap_top = uvm_heap_grow(p->pgtbl, p->heap_top, size, PTE_W | PTE_R | PTE_U);
 
         // printf("grow: heap_tops = %p\n", p->heap_top);
         // vm_print(p->pgtbl);
@@ -183,9 +184,8 @@ uint64 sys_exec()
 
     uint64 arg_base=0;
 
-    if(argstr(0, path, DIR_PATH_LEN) < 0 || argaddr(1, &arg_base) < 0){
-        return -1;
-    }
+    arg_str(0, path, DIR_PATH_LEN);
+    arg_uint64(1, &arg_base);
 
     for(int i=0; i<ELF_MAXARGS; i++)
     {
@@ -195,10 +195,10 @@ uint64 sys_exec()
         // 首先从用户态获取指针值
         if(!is_valid_addr(arg_addr))
             break;
-        uvm_copyin(myproc()->pgtbl, &arg_addr, str_addr, sizeof(uint64));
+        uvm_copyin(myproc()->pgtbl, (uint64)&arg_addr, str_addr, sizeof(uint64));
 
         // 以0作为argv的结束
-        if(uarg==0){
+        if(arg_addr==0){
             argv[i]=NULL;
 
             ret=proc_exec(path, argv);
@@ -210,14 +210,14 @@ uint64 sys_exec()
             break;
             
         argv[i]=(char*)pmem_alloc(true);
-        uvm_copyin_str(myproc()->pgtbl, argv[i], arg_addr, ELF_MAXARG_LEN);
+        uvm_copyin_str(myproc()->pgtbl, (uint64)argv[i], arg_addr, ELF_MAXARG_LEN);
 
     }
 
     // 清理
     for(int i=0;argv[i]!=NULL;i++)
     {
-        pmem_free(argv[i],true);
+        pmem_free((uint64)argv[i],true);
     }
     return ret;
 }

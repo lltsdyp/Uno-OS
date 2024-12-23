@@ -244,7 +244,6 @@ inode_t* path_to_pinode(char* path, char* name)
 // 如果path对应的inode不存在则创建inode
 // 失败返回NULL
 inode_t* path_create_inode(char* path, uint16 type, uint16 major, uint16 minor)
-
 {
     char name[DIR_NAME_LEN];
     inode_t *dp = path_to_pinode(path, name);  // 查找父目录 inode和文件名
@@ -464,9 +463,7 @@ uint32 dir_get_entries(inode_t *pip, uint32 len, void* dst, bool user)
 // 改变进程里存储的当前目录
 // 成功返回0，失败返回-1
 uint32 dir_change(char *path)
-{
-    char name[DIR_NAME_LEN];
-    
+{    
     inode_t *ip = path_to_inode(path);
     if (ip == NULL) 
         return -1; 
@@ -477,7 +474,7 @@ uint32 dir_change(char *path)
         return -1;
     }
 
-    proc_t *p = my_proc();
+    proc_t *p = myproc();
     p->cwd = ip;  // 更新进程的当前工作目录
 
     inode_unlock_free(ip); 

@@ -46,6 +46,7 @@
         "fs.h": "c",
         "buf.h": "c",
         "sysfunc.h": "c",
-        "user_lib.h": "c"
+        "user_lib.h": "c",
+        "dinode.h": "c"
     }
 }

@@ -19,6 +19,16 @@ static uint64 (*syscalls[])(void) = {
 
     [SYS_open]          sys_open,
     [SYS_close]         sys_close,
+    [SYS_read]          sys_read,
+    [SYS_write]         sys_write,
+    [SYS_lseek]         sys_lseek,
+    [SYS_dup]           sys_dup,
+    [SYS_fstat]         sys_fstat,
+    [SYS_getdir]        sys_getdir,
+    [SYS_mkdir]         sys_mkdir,
+    [SYS_chdir]         sys_chdir,
+    [SYS_link]          sys_link,
+    [SYS_unlink]        sys_unlink,
 };
 
 // 系统调用

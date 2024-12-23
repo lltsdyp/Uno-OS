@@ -13,6 +13,9 @@
 #include "proc/proc.h"
 #include "trap/trap.h"
 #include "dev/plic.h"
+#include "dev/console.h"
+#include "fs/buf.h"
+#include "fs/inode.h"
 
 volatile static int started = 0;
 
@@ -22,8 +25,8 @@ int main()
     int cpuid = r_tp();
 
     if(cpuid == 0) {
+        console_init();
         print_init();
-        printf("cpu %d is booting!\n", cpuid);
         pmem_init();
         kvm_init();
         kvm_inithart();
@@ -32,10 +35,13 @@ int main()
         plic_init();
         plic_inithart();
         mmap_init();
+        buf_init();
+        inode_init();
         virtio_disk_init();
         proc_init();
         proc_make_first();
 
+        printf("cpu %d is booting!\n", cpuid);
         __sync_synchronize();
         // started = 1;
     } else {

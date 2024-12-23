@@ -47,7 +47,7 @@ mmap_region_t* mmap_region_alloc(bool init)
     if(init)
     {
         region->mmap.begin = MMAP_BEGIN;
-        region->mmap.npages = 0;
+        region->mmap.npages = (MMAP_END - MMAP_BEGIN)/PGSIZE;
         region->mmap.next = NULL;
     }
 
