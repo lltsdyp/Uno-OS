@@ -90,6 +90,7 @@ uint32 dir_add_entry(inode_t *pip, uint16 inode_num, char *name)
     // 写回到目录
     buf_write(buf);
     buf_release(buf);
+    inode_rw(pip, true);
     return offset;
 }
 
@@ -189,7 +190,14 @@ static inode_t* search_inode(char* path, char* name, bool find_parent)
     inode_t *ip, *next;
     uint16 inode_num;
     
-    ip = (*path == '/') ? inode_get(INODE_ROOT):inode_dup(myproc()->cwd);
+    if(*path=='/')
+    {
+        ip=inode_get(INODE_ROOT);
+    }
+    else
+    {
+        ip=inode_dup(myproc()->cwd);
+    }
 
     while ((path = skip_element(path, name)) != 0)
     {
@@ -271,6 +279,7 @@ inode_t* path_create_inode(char* path, uint16 type, uint16 major, uint16 minor)
         return NULL;  // inode 分配失败
     }
     inode_lock(ip);
+    ip->disk_inode.nlink = 1;
     inode_rw(ip, 1);
 
     if(type == FD_DIR)

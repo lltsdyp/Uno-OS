@@ -64,7 +64,7 @@ inode_t *inode_get(uint16 inode_num)
     for (int i = 0; i < I_NODE_CACHE_SIZE; ++i)
     {
         // 找到的情况
-        if (icache[i].inode_num == inode_num )
+        if (icache[i].inode_num == inode_num && icache[i].ref > 0)
         {
             ++(icache[i].ref);
             spinlock_release(&lk_icache);
@@ -110,7 +110,8 @@ inode_t *inode_create(uint16 type, uint16 major, uint16 minor)
 
     buf_write(b);
     buf_release(b);
-    return inode_get(inode_num);
+    inode_t *result=inode_get(inode_num);
+    return result;
     panic("inode_create: no empty inode");
 }
 
@@ -143,6 +144,7 @@ void inode_free(inode_t *ip)
         inode_destroy(ip);
         ip->disk_inode.type = FT_UNUSED;
         inode_rw(ip, true);
+        ip->inode_num=INODE_NUM_UNUSED;
         ip->valid = 0;
 
         sleeplock_release(&(ip->slk));
