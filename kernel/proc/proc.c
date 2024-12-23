@@ -60,8 +60,6 @@ static void fork_return()
         fs_init();  // 初始化文件系统
         p->cwd=path_to_inode("/");
         p->filelist[0]=file_create_dev("console",DEV_CONSOLE,0);
-        p->filelist[0]->readable=true;
-        p->filelist[0]->writable=true;
         p->filelist[1]=file_dup(p->filelist[0]);
     }
 
