@@ -468,13 +468,18 @@ void proc_scheduler()
                 // 下一个要执行的进程就是当前我们检查的proc
                 if(max_weight<get_weight(p))
                 {
+                    if(next_p)
+                    {
+                        spinlock_release(&(next_p->lk));
+                    }
                     max_weight=get_weight(p);
                     next_p=p;
                 }
 
                 found = 1;
             }
-            spinlock_release(&(p->lk));
+            if(next_p!=p)
+                spinlock_release(&(p->lk));
         }
 
         if (found == 0)
@@ -484,8 +489,8 @@ void proc_scheduler()
         }
         else
         {
-            spinlock_acquire(&(next_p->lk));
             assert(next_p->state == RUNNABLE, "proc_scheduler: proc is not runnable");
+            printf("Current cpu: %d, current pid: %d\n",mycpuid(),next_p->pid);
             next_p->state = RUNNING;
             mycpu()->proc = next_p;
             next_p->begin_running_time = ticks;                        // 记录开始运行的时间

@@ -18,57 +18,57 @@ UNO-OS是一款RISCV平台的，宏内核操作系统，该内核部分参考了
 详细架构如下
 ```
 ./kernel/
-├── boot
-│   ├── entry.S
-│   ├── main.c
+├── boot    # 启动模块
+│   ├── entry.S                     # 用于加载start函数
+│   ├── main.c                      # 内核入口函数，完成必要的初始化工作
 │   ├── Makefile
-│   └── start.c
-├── dev
-│   ├── console.c
+│   └── start.c                     # start函数，完成从M模式向S模式的跳转
+├── dev     # 设备和驱动模块
+│   ├── console.c                   # 控制台设备
 │   ├── Makefile
-│   ├── plic.c
-│   ├── timer.c
-│   ├── uart.c
-│   └── virtio.c
-├── fs
-│   ├── bitmap.c
-│   ├── buf.c
-│   ├── dir.c
-│   ├── file.c
-│   ├── fs.c
-│   ├── inode.c
+│   ├── plic.c                      # 处理PLIC外设中断
+│   ├── timer.c                     # 系统时钟模块
+│   ├── uart.c                      # 处理UART外设中断
+│   └── virtio.c                    # qemu虚拟IO接口
+├── fs      # 文件和IO模块
+│   ├── bitmap.c                    # 文件系统中的bitmap模块
+│   ├── buf.c                       # IO模块的缓冲层
+│   ├── dir.c                       # 文件目录模块
+│   ├── file.c                      # 文件结构抽象模块
+│   ├── fs.c                        # 文件系统的管理
+│   ├── inode.c                     # 索引节点的管理
 │   └── Makefile
 ├── kernel.ld
-├── lib
+├── lib     # 相关的实用工具库
 │   ├── Makefile
-│   ├── print.c
-│   ├── sleeplock.c
-│   ├── spinlock.c
-│   └── str.c
+│   ├── print.c                     # 打印和调试
+│   ├── sleeplock.c                 # 睡眠锁
+│   ├── spinlock.c                  # 自旋锁
+│   └── str.c                       # 字符串操作
 ├── Makefile
-├── mem
-│   ├── kvm.c
+├── mem     # 内存管理模块
+│   ├── kvm.c                       # 内核内存管理
 │   ├── Makefile
-│   ├── mmap.c
-│   ├── pmem.c
-│   └── uvm.c
-├── proc
-│   ├── cpu.c
-│   ├── exec.c
+│   ├── mmap.c                      # 内存直接映射管理
+│   ├── pmem.c                      # 物理内存分配管理
+│   └── uvm.c                       # 用户页表管理
+├── proc    # 进程管理模块
+│   ├── cpu.c                       # cpu管理模块
+│   ├── exec.c                      # elf程序执行模块
 │   ├── Makefile
-│   ├── proc.c
-│   └── swtch.S
-├── syscall
+│   ├── proc.c                      # 进程调度模块
+│   └── swtch.S                     # 上下文切换
+├── syscall # 系统调用管理模块
 │   ├── Makefile
-│   ├── syscall.c
-│   ├── sysfile.c
-│   └── sysproc.c
-└── trap
+│   ├── syscall.c                   # 系统调用处理
+│   ├── sysfile.c                   # 文件相关系统调用
+│   └── sysproc.c                   # 进程相关系统调用
+└── trap    # 中断处理模块
     ├── Makefile
-    ├── trampoline.S
-    ├── trap_kernel.c
-    ├── trap.S
-    └── trap_user.c 
+    ├── trampoline.S                # 内核态和进程态切换的处理
+    ├── trap_kernel.c               # M模式中断处理
+    ├── trap.S                      # 进行上下文切换相关工作
+    └── trap_user.c                 # S模式中断处理
 ```
 
 ## 完成度
@@ -81,7 +81,19 @@ UNO-OS是一款RISCV平台的，宏内核操作系统，该内核部分参考了
 
 截至12月24日，该系统总共经历了100余次修改（以commit次数计算）。可以参考我们的[commit记录](https://gitlab.eduxiji.net/T202410269994240/project2608132-270520/-/commits/master)
 
-<!--此处应有表格-->
+总的代码量约为6000行（去除注释）
+
+以下为各个版本完成的工作：
+|版本号|完成内容|分支链接|
+|:---:|:---:|:---:|
+|v0.1alpha|完成boot模块并实现必要的库|[gitlab](https://gitlab.eduxiji.net/T202410269994240/project2608132-270520/-/tree/v0.1alpha)|
+|v0.2alpha|完成虚拟内存模块|[gitlab](https://gitlab.eduxiji.net/T202410269994240/project2608132-270520/-/tree/v0.2alpha)|
+|v0.3alpha|完成中断处理模块|[gitlab](https://gitlab.eduxiji.net/T202410269994240/project2608132-270520/-/tree/v0.3alpha)|
+|v0.4alpha|完成进程结构的设计|[gitlab](https://gitlab.eduxiji.net/T202410269994240/project2608132-270520/-/tree/v0.4alpha)|
+|v0.5alpha|完成进程调度模块|[gitlab](https://gitlab.eduxiji.net/T202410269994240/project2608132-270520/-/tree/v0.5alpha)|
+|v0.6alpha|完成磁盘底层操作接口|[gitlab](https://gitlab.eduxiji.net/T202410269994240/project2608132-270520/-/tree/v0.6alpha)|
+|v0.7alpha|完成文件系统模块|[gitlab](https://gitlab.eduxiji.net/T202410269994240/project2608132-270520/-/tree/v0.7alpha)|
+|v0.8alpha|完成基础的系统调用|[gitlab](https://gitlab.eduxiji.net/T202410269994240/project2608132-270520/-/tree/v0.8alpha)|
 
 ## 创新点
 
@@ -98,3 +110,8 @@ UNO-OS是一款RISCV平台的，宏内核操作系统，该内核部分参考了
 - 实现更多系统调用
 
 上述内容详见[UNO-OS内核设计手册](./UNO-OS内核设计手册)
+
+## 参考工作
+- [ecnu-oslab](https://gitee.com/HaoDong-Xia/ecnu-oslab.git)
+- [xv6-labs-2020](https://github.com/mit-pdos/xv6-public)
+
