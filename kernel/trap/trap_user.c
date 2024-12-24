@@ -27,7 +27,7 @@ void trap_user_handler()
     uint64 sepc = r_sepc();       // 记录了发生异常时的pc值
     uint64 sstatus = r_sstatus(); // 与特权模式和中断相关的状态信息
     uint64 scause = r_scause();   // 引发trap的原因
-    // uint64 stval = r_stval();     // 发生trap时保存的附加信息(不同trap不一样)
+    uint64 stval = r_stval();     // 发生trap时保存的附加信息(不同trap不一样)
 
     proc_t *p = myproc();
     int trap_id = scause & 0xf;
@@ -51,7 +51,8 @@ void trap_user_handler()
                 external_interrupt_handler();
                 break;  
             default:
-                panic("trap_user_handler:Unknown trap id %x,\n\tdescription:%s",trap_id,interrupt_info[trap_id]);
+                panic("trap_user_handler:Unhandled interruption,\n\tsepc:%p,scause:%p,sstatus:%p,stval:%p,trap_id:%d\n\tdescription:%s"
+                    ,sepc,scause,sstatus,stval,trap_id,interrupt_info[trap_id]);
                 break;
         }
     }
@@ -65,7 +66,8 @@ void trap_user_handler()
                 syscall();
                 break;
             default:
-                panic("trap_user_handler:Unknown trap id %x,\n\tdescription:%s", trap_id,exception_info[trap_id]);
+                panic("trap_user_handler:Unhandled exception,\n\tsepc:%p,scause:%p,sstatus:%p,stval:%p,trap_id:%d\n\tdescription:%s"
+                    ,sepc,scause,sstatus,stval,trap_id,exception_info[trap_id]);
                 break;
         }
     }

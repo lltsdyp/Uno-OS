@@ -128,7 +128,7 @@ $ make qemu
 - 进行更加完备的测试
 - 实现更多系统调用
 
-上述内容详见[UNO-OS内核设计手册](./UNO-OS内核设计手册)
+上述内容详见[UNO-OS内核设计手册](./UNO-OS内核设计手册.pdf)
 
 ## 参考工作
 - [ecnu-oslab](https://gitee.com/HaoDong-Xia/ecnu-oslab.git)
