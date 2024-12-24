@@ -490,7 +490,7 @@ void proc_scheduler()
         else
         {
             assert(next_p->state == RUNNABLE, "proc_scheduler: proc is not runnable");
-            printf("Current cpu: %d, current pid: %d\n",mycpuid(),next_p->pid);
+            // printf("Current cpu: %d, current pid: %d\n",mycpuid(),next_p->pid);
             next_p->state = RUNNING;
             mycpu()->proc = next_p;
             next_p->begin_running_time = ticks;                        // 记录开始运行的时间
