@@ -167,7 +167,6 @@ int proc_exec(char* path, char** argv)
     p->mmap->next = mmap_region_alloc(true);
 
 // ------------------------- 正常返回 or 异常返回 --------------------
-    vm_print(p->pgtbl);
     return argc;
 
 bad:
