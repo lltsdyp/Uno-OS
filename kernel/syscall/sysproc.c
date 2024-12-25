@@ -63,9 +63,6 @@ uint64 sys_brk()
     // 查询堆顶
     if(new_heap_top == 0)
     {
-        // printf("look: heap_tops = %p\n", p->heap_top);
-        // vm_print(p->pgtbl);
-        // printf("\n");
         return p->heap_top;
     }
 

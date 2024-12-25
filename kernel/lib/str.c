@@ -1,5 +1,7 @@
 #include "lib/str.h"
 
+#pragma GCC optimize ("O0")
+
 // 从begin开始对连续n个字节赋值data
 void memset(void* begin, uint8 data, uint32 n)
 {
@@ -13,8 +15,9 @@ void memcpy(void *dst, const void* src, uint32 n)
 {
     const char *s = src;
     char *d = dst;
-    while(n--) {
+    while(n) {
         *d = *s;
+        n--;
         d++;
         s++;
     }

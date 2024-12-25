@@ -1,5 +1,7 @@
 #include "userlib.h"
 
+#define MMAP_BEGIN 0x0000003ffe03e000
+
 void assert(int condition, const char* message) {
     if (!condition) {
         printf("%s failed\n", message);
@@ -56,10 +58,6 @@ void test_sys_write() {
         bytes_written += sys_write(fd, strlen(data), (void *)data);
     assert(bytes_written == strlen(data)*1000,"sys_write:test2");
     sys_close(fd);
-
-    // // 测试向无效的文件描述符写入，期望失败
-    // bytes_written = sys_write(fd, strlen(data), (uint64)data);
-    // assert(bytes_written == -1);
 }
 
 
@@ -159,26 +157,68 @@ void test_time()
     printf("time:%d\n",(int)tick);
 }
 
+void test_sleep()
+{
+    uint64 start=sys_time();
+    sys_sleep(5);
+    uint64 end=sys_time();
+    assert(end-start>=5,"test_sleep:test1");
+}
+
+void test_sys_brk() {
+    // 测试查询堆顶
+    uint64 current_heap_top = sys_brk(0);
+    assert(current_heap_top != 0, "sys_brk:test1");
+
+    // 测试扩展堆
+    uint64 new_heap_top = sys_brk(current_heap_top + 4096);
+    assert(new_heap_top == current_heap_top + 4096, "sys_brk:test2");
+
+    // 测试收缩堆
+    new_heap_top = sys_brk(new_heap_top - 4096);
+    assert(new_heap_top == current_heap_top, "sys_brk:test3");
+}
+
+void test_sys_mmap() {
+    // 测试内存映射，由内核选择起始地址
+    uint64 start = sys_mmap(0, 4096);
+    assert(start != (uint64)-1, "sys_mmap:test1");
+
+    // 测试内存映射，指定起始地址
+    start = sys_mmap(MMAP_BEGIN+8192, 8192);
+    assert(start == MMAP_BEGIN+8192, "sys_mmap:test2");
+}
+
+void test_sys_munmap() {
+    // 测试取消内存映射
+    uint64 start = sys_mmap(0, 4096);
+    assert(start != (uint64)-1, "sys_munmap:test1");
+    assert(sys_munmap(start, 4096) == 0, "sys_munmap:test2");
+
+    start = sys_mmap(MMAP_BEGIN+8192, 8192);
+    assert(start == MMAP_BEGIN+8192, "sys_munmap:test3");
+    assert(sys_munmap(start, 8192) == 0, "sys_munmap:test4");
+}
+
 int main()
 {
-    // printf("%s",longtext);
-    // TEST SUITE 1
     test_sys_open();
     test_sys_close();
     test_sys_write();
     test_sys_read();
     test_sys_lseek();
     test_sys_dup();
-
-    // TEST SUITE 2
     test_sys_mkdir();
     test_sys_getdir();
     test_sys_link();
     test_sys_unlink();
-
-    // TEST SUITE 3
     test_pid();
     test_ppid();
     test_time();
+    test_sleep();
+    test_sys_brk();
+    test_sys_mmap();
+    test_sys_munmap();
+
     return 0;
 }

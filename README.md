@@ -98,6 +98,33 @@ $ make qemu
 
 在实现上述模块的同时，为了保证系统的稳定性，我们还进行了大量的测试，包括内核态的测试和用户态的测试。
 
+目前已实现的系统调用
+``` c
+int sys_exec(char* path, char** argv);                      // 从磁盘中加载并执行一个ELF文件
+uint64 sys_brk(uint64 new_heap_top);                        // 扩展或收缩用户堆大小
+uint64 sys_mmap(uint64 start, uint32 len);                  // 分配一个指定的mmap区域
+uint64 sys_munmap(uint64 start, uint32 len);                // 释放一个指定的mmap区域
+int sys_fork();                                             // 完全复制当前进程的状态（除了pid）
+int sys_wait(void* addr);                                   // 进程进入休眠态，等待任一子进程的退出后将其唤醒
+int sys_exit(int exit_state);                               // 当前进程退出，如果有子进程，则将子进程交由proczero管理
+int sys_sleep(uint32 seconds);                              // 令当前进程睡眠指定的系统时钟刻（10个系统时钟刻约为1秒）
+int sys_open(char* path, uint32 open_mode);                 // 打开或创建文件
+int sys_close(int fd);                                      // 关闭指定的文件 
+uint32 sys_read(int fd, uint32 len, void* addr);            // 对于一个给定的文件，读取不超过指定的长度个字节到数组中
+uint32 sys_write(int fd, uint32 len, const void* addr);     // 对于一个给定的文件，写入不超过指定的长度个字节到文件中
+uint32 sys_lseek(int fd, uint32 offset, int flags);         // 设置文件偏移量
+int sys_dup(int fd);                                        // 复制文件描述符
+int sys_fstat(int fd, fstat_t* state);                      // 获取文件信息
+uint32 sys_getdir(int fd, dirent_t* addr, uint32 len);      // 获取目录中的目录项
+int sys_mkdir(char* path);                                  // 根据指定的目录路径创建目录
+int sys_chdir(char* path);                                  // 修改当前工作目录
+int sys_link(char* old_path, char* new_path);               // 创建文件链接
+int sys_unlink(char* path);                                 // 删除文件链接，如果链接数为0则删除文件
+int sys_pid();                                              // 获取当前进程的pid
+int sys_ppid();                                             // 获取当前进程的父进程的pid
+uint64 sys_time();                                          // 获取当前系统时间
+```
+
 ## 开发历程
 
 截至12月24日，该系统总共经历了100余次修改（以commit次数计算）。可以参考我们的[commit记录](https://gitlab.eduxiji.net/T202410269994240/project2608132-270520/-/commits/master)

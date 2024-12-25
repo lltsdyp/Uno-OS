@@ -105,8 +105,8 @@ int proc_exec(char* path, char** argv)
     // 准备ustack
     uint64 page = (uint64)pmem_alloc(false);
     uint64 sp = TRAPFRAME;
-    vm_mappages(pgtbl, sp - PGSIZE, page, PGSIZE, PTE_R | PTE_W | PTE_U);
     p->ustack_pages = 1;
+    vm_mappages(pgtbl, sp - PGSIZE, page, PGSIZE, PTE_R | PTE_W | PTE_U);
 
     // 向ustack里面填充参数 + sp_list
     uint64 sp_list[ELF_MAXARGS + 1];
@@ -141,8 +141,6 @@ int proc_exec(char* path, char** argv)
         goto bad;
     uvm_copyout(pgtbl, sp, (uint64)sp_list, arg_len);
 
-    // int main(int argc, char* argv[])
-    // tf->a0 = arg_len/sizeof(uint64);
     tf->a1 = sp;
 
 // --------------------- 旧地址空间的销毁 + 新地址空间的设置 ----------------------------
