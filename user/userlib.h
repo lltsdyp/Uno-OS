@@ -50,7 +50,7 @@ int sys_sleep(uint32 seconds);
 int sys_open(char* path, uint32 open_mode);
 int sys_close(int fd);
 uint32 sys_read(int fd, uint32 len, void* addr);
-uint32 sys_write(int fd, uint32 len, void* addr);
+uint32 sys_write(int fd, uint32 len, const void* addr);
 uint32 sys_lseek(int fd, uint32 offset, int flags);
 int sys_dup(int fd);
 int sys_fstat(int fd, fstat_t* state);
@@ -63,7 +63,7 @@ int sys_unlink(char* path);
 // 来自user_lib.c
 
 void   _main();
-uint32 stdout(char* str, uint32 len);
+uint32 stdout(const char* str, uint32 len);
 uint32 stdin(char* str, uint32 len);
 void   memset(void* begin, uint8 data, uint32 n);
 void   memmove(void* dst, const void* src, uint32 n);

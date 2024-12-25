@@ -18,12 +18,12 @@ void test_sys_open() {
 
     // 测试创建一个新文件
     int fd = sys_open("/newfile.txt", MODE_WRITE | MODE_CREATE);
-    assert(fd >= 0,"sys_open:test2");
+    assert(fd >= 0,"sys_open:test1");
     sys_close(fd);
 
     // 测试打开一个存在的文件
     fd = sys_open("/newfile.txt", MODE_READ);
-    assert(fd >= 0,"sys_open:test3");
+    assert(fd >= 0,"sys_open:test2");
     sys_close(fd);
 }
 
@@ -57,12 +57,10 @@ void test_sys_write() {
     int fd = sys_open("/testfile.txt", MODE_WRITE | MODE_CREATE);
     assert(fd >= 0,"sys_write:test1");
     const char* data = "Hello, world!!!!!!!!!!!";
-    int bytes_written = sys_write(fd, strlen(data), (void *)data);
-    assert(bytes_written == strlen(data),"sys_write:test2");
-    // TODO
-    // bytes_written=sys_write(fd, 1048, (void *)longtext);
-    // printf("%d\n",strlen(longtext));
-    // assert(bytes_written == 1048,"sys_write:test3");
+    int bytes_written = 0;
+    for(int i=0;i<1000;++i)
+        bytes_written += sys_write(fd, strlen(data), (void *)data);
+    assert(bytes_written == strlen(data)*1000,"sys_write:test2");
     sys_close(fd);
 
     // // 测试向无效的文件描述符写入，期望失败
@@ -193,7 +191,7 @@ int main()
     test_sys_lseek();
     test_sys_dup();
 
-    // TEST SUITE 2
+    // // TEST SUITE 2
     test_sys_mkdir();
     test_sys_getdir();
     test_sys_link();

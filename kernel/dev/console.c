@@ -100,6 +100,7 @@ uint32 console_write(uint32 len, uint64 src, bool user)
         for(uint32 i = 0; i < cutlen; i++)
             console_putchar(tmp[i]);
         len -= cutlen;
+        src += cutlen;
     }
     spinlock_release(&cons.lk);
     return len;

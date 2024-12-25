@@ -9,7 +9,7 @@ void _main()
 }
 
 // 标准输出
-uint32 stdout(char* str, uint32 len)
+uint32 stdout(const char* str, uint32 len)
 {
     return sys_write(STD_OUT, len, str);
 }

@@ -15,21 +15,25 @@
 ## 简介
 UNO-OS是一款RISCV平台的，宏内核操作系统，该内核部分参考了Linux和xv6的设计逻辑，同时也加入了一系列新的设计理念。
 
+以下为Uno-OS系统的结构概览
+
+![system-overview](./images/system-overview.png)
+
 详细架构如下
 ```
 ./kernel/
 ├── boot    # 启动模块
 │   ├── entry.S                     # 用于加载start函数
 │   ├── main.c                      # 内核入口函数，完成必要的初始化工作
-│   ├── Makefile
-│   └── start.c                     # start函数，完成从M模式向S模式的跳转
+│   ├── start.c                     # start函数，完成从M模式向S模式的跳转
+│   └── Makefile
 ├── dev     # 设备和驱动模块
 │   ├── console.c                   # 控制台设备
-│   ├── Makefile
 │   ├── plic.c                      # 处理PLIC外设中断
 │   ├── timer.c                     # 系统时钟模块
 │   ├── uart.c                      # 处理UART外设中断
-│   └── virtio.c                    # qemu虚拟IO接口
+│   ├── virtio.c                    # qemu虚拟IO接口
+│   └── Makefile
 ├── fs      # 文件和IO模块
 │   ├── bitmap.c                    # 文件系统中的bitmap模块
 │   ├── buf.c                       # IO模块的缓冲层
@@ -38,37 +42,37 @@ UNO-OS是一款RISCV平台的，宏内核操作系统，该内核部分参考了
 │   ├── fs.c                        # 文件系统的管理
 │   ├── inode.c                     # 索引节点的管理
 │   └── Makefile
-├── kernel.ld
 ├── lib     # 相关的实用工具库
-│   ├── Makefile
 │   ├── print.c                     # 打印和调试
 │   ├── sleeplock.c                 # 睡眠锁
 │   ├── spinlock.c                  # 自旋锁
-│   └── str.c                       # 字符串操作
-├── Makefile
+│   ├── str.c                       # 字符串操作
+│   └── Makefile
 ├── mem     # 内存管理模块
 │   ├── kvm.c                       # 内核内存管理
-│   ├── Makefile
 │   ├── mmap.c                      # 内存直接映射管理
 │   ├── pmem.c                      # 物理内存分配管理
-│   └── uvm.c                       # 用户页表管理
+│   ├── uvm.c                       # 用户页表管理
+│   └── Makefile
 ├── proc    # 进程管理模块
 │   ├── cpu.c                       # cpu管理模块
 │   ├── exec.c                      # elf程序执行模块
-│   ├── Makefile
 │   ├── proc.c                      # 进程调度模块
-│   └── swtch.S                     # 上下文切换
+│   ├── swtch.S                     # 上下文切换
+│   └── Makefile
 ├── syscall # 系统调用管理模块
-│   ├── Makefile
 │   ├── syscall.c                   # 系统调用处理
 │   ├── sysfile.c                   # 文件相关系统调用
-│   └── sysproc.c                   # 进程相关系统调用
-└── trap    # 中断处理模块
-    ├── Makefile
-    ├── trampoline.S                # 内核态和进程态切换的处理
-    ├── trap_kernel.c               # M模式中断处理
-    ├── trap.S                      # 进行上下文切换相关工作
-    └── trap_user.c                 # S模式中断处理
+│   ├── sysproc.c                   # 进程相关系统调用
+│   └── Makefile
+├── trap    # 中断处理模块
+|   ├── trampoline.S                # 内核态和进程态切换的处理
+|   ├── trap_kernel.c               # M模式中断处理
+|   ├── trap.S                      # 进行上下文切换相关工作
+|   ├── trap_user.c                 # S模式中断处理
+|   └── Makefile
+├── Makefile
+└── kernel.ld
 ```
 
 ## 开发环境
