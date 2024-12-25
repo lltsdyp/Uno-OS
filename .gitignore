@@ -9,3 +9,5 @@ fs.img
 /mkfs/mkfs
 
 /user/_*
+
+*.dump

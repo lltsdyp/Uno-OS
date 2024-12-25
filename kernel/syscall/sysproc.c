@@ -221,3 +221,27 @@ uint64 sys_exec()
     }
     return ret;
 }
+
+// 获取pid
+// 成功返回pid 失败返回-1
+uint64 sys_pid()
+{
+    int pid=myproc()->pid;
+    return pid;
+}
+
+// 获取父进程的pid
+// 成功返回父进程pid，失败返回-1
+uint64 sys_ppid()
+{
+    proc_t *pp=myproc()->parent;
+    if(pp==NULL)
+        return -1;
+    else
+        return pp->pid;
+}
+
+uint64 sys_time()
+{
+    return timer_get_ticks();
+}

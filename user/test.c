@@ -8,14 +8,8 @@ void assert(int condition, const char* message) {
         printf("%s passed\n", message);
     }
 }
-// const char *longtext="Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.";
 
 void test_sys_open() {
-
-    // // 测试打开一个不存在的文件，期望失败
-    // int fd = sys_open("/nonexistentfile.txt", MODE_READ);
-    // assert(fd == -1,"sys_open:test1");
-
     // 测试创建一个新文件
     int fd = sys_open("/newfile.txt", MODE_WRITE | MODE_CREATE);
     assert(fd >= 0,"sys_open:test1");
@@ -85,10 +79,6 @@ void test_sys_lseek() {
     assert(offset == 10, "test_sys_lseek:lseek3");
 
     sys_close(fd);
-
-    // // 测试无效的文件描述符，期望失败
-    // offset = sys_lseek(fd, 10, SEEK_SET);
-    // assert(offset == -1, "test_sys_lseek:lseek4");
 }
 
 void test_sys_dup() {
@@ -99,10 +89,6 @@ void test_sys_dup() {
     assert(new_fd >= 0,"sys_dup:test2");
     sys_close(fd);
     sys_close(new_fd);
-
-    // // 测试无效的文件描述符，期望失败
-    // new_fd = sys_dup(fd);
-    // assert(new_fd == -1);
 }
 
 void test_sys_fstat() {
@@ -113,10 +99,6 @@ void test_sys_fstat() {
     int result = sys_fstat(fd, &st);
     assert(result == 0,"sys_fstat:test2");
     sys_close(fd);
-
-//     // 测试无效的文件描述符，期望失败
-//     result = sys_fstat(fd, (uint64)&st);
-//     assert(result == -1);
 }
 
 void test_sys_getdir() {
@@ -127,10 +109,6 @@ void test_sys_getdir() {
     int bytes_read = sys_getdir(fd, dirent, sizeof(dirent));
     assert(bytes_read > 0,"sys_getdir:test2");
     sys_close(fd);
-
-    // 测试无效的文件描述符，期望失败
-    // bytes_read = sys_getdir(fd, (uint64)buffer, 1024);
-    // assert(bytes_read == -1);
 }
 
 void test_sys_mkdir() {
@@ -144,45 +122,46 @@ void test_sys_mkdir() {
 
     result=sys_mkdir("/newdir/subdir/subsubdir");
     assert(result==0,"sys_mkdir:test3");
-
-
-    // 测试创建已存在的目录，期望失败
-    // result = sys_mkdir("/newdir");
-    // assert(result == -1);
 }
 
 void test_sys_chdir() {
     // 测试切换到存在的目录
     int result = sys_chdir("/newdir");
     assert(result == 0,"sys_chdir:test1");
-
-    // // 测试切换到不存在的目录，期望失败
-    // result = sys_chdir("/nonexistentdir");
-    // assert(result == -1);
 }
 
 void test_sys_link() {
     // 测试创建文件链接
     int result = sys_link("/testfile.txt", "/testfile_link.txt");
     assert(result == 0,"sys_link:test1");
-
-    // // 测试创建已存在的链接，期望失败
-    // result = sys_link("/testfile.txt", "/testfile_link.txt");
-    // assert(result == -1);
 }
 
 void test_sys_unlink() {
     // 测试删除文件链接
     int result = sys_unlink("/testfile_link.txt");
     assert(result == 0,"sys_unlink:test1");
+}
 
-    // // 测试删除不存在的链接，期望失败
-    // result = sys_unlink("/nonexistentlink.txt");
-    // assert(result == -1);
+void test_pid()
+{
+    // 因为proczero的唯一任务就是加载当前进程，因此我们可以通过pid=2来判断是否成功
+    assert(sys_pid()==2,"test_pid:test1");
+}
+
+void test_ppid()
+{
+    assert(sys_ppid() == 1, "test_ppid:test1");
+}
+
+void test_time()
+{
+    uint64 tick=sys_time();
+    printf("time:%d\n",(int)tick);
 }
 
 int main()
 {
+    // printf("%s",longtext);
     // TEST SUITE 1
     test_sys_open();
     test_sys_close();
@@ -191,10 +170,15 @@ int main()
     test_sys_lseek();
     test_sys_dup();
 
-    // // TEST SUITE 2
+    // TEST SUITE 2
     test_sys_mkdir();
     test_sys_getdir();
     test_sys_link();
     test_sys_unlink();
+
+    // TEST SUITE 3
+    test_pid();
+    test_ppid();
+    test_time();
     return 0;
 }

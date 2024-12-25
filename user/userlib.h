@@ -59,6 +59,9 @@ int sys_mkdir(char* path);
 int sys_chdir(char* path);
 int sys_link(char* old_path, char* new_path);
 int sys_unlink(char* path);
+int sys_pid();
+int sys_ppid();
+uint64 sys_time();
 
 // 来自user_lib.c
 

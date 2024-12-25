@@ -26,7 +26,7 @@ static int load_segment(inode_t* ip, uint32 offset, pgtbl_t pgtbl, uint64 va, ui
         pa = PTE_TO_PA(*pte);
         assert(pa != 0, "load_segment: addr should exist");
         read_len = (size - off < PGSIZE) ? size - off : PGSIZE;
-        if(inode_read_data(ip, offset, read_len, (void*)pa, false) != read_len)
+        if(inode_read_data(ip, offset+off, read_len, (void*)pa, false) != read_len)
             return -1;
     }
     return 0;
@@ -166,6 +166,7 @@ int proc_exec(char* path, char** argv)
     p->mmap = mmap_region_alloc(true);
 
 // ------------------------- 正常返回 or 异常返回 --------------------
+    vm_print(p->pgtbl);
     return argc;
 
 bad:

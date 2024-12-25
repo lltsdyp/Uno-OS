@@ -12,6 +12,9 @@ uint64 sys_fork();
 uint64 sys_wait();
 uint64 sys_exit();
 uint64 sys_sleep();
+uint64 sys_pid();
+uint64 sys_ppid();
+uint64 sys_time();
 
 // in sysfile.c
 uint64 sys_open();

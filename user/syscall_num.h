@@ -22,5 +22,8 @@
 #define SYS_chdir        17
 #define SYS_link         18
 #define SYS_unlink       19
+#define SYS_pid          20
+#define SYS_ppid         21
+#define SYS_time         22
 
 #endif

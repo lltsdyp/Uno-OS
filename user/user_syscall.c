@@ -119,3 +119,18 @@ int sys_unlink(char *path)
 {
     return syscall(SYS_unlink, path);
 }
+
+int sys_pid()
+{
+    return syscall(SYS_pid);
+}
+
+int sys_ppid()
+{
+    return syscall(SYS_ppid);
+}
+
+uint64 sys_time()
+{
+    return syscall(SYS_time);
+}

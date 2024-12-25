@@ -29,6 +29,9 @@ static uint64 (*syscalls[])(void) = {
     [SYS_chdir]         sys_chdir,
     [SYS_link]          sys_link,
     [SYS_unlink]        sys_unlink,
+    [SYS_pid]           sys_pid,
+    [SYS_ppid]          sys_ppid,
+    [SYS_time]          sys_time,
 };
 
 // 系统调用
