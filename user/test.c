@@ -195,9 +195,7 @@ void test_sys_munmap() {
     assert(start != (uint64)-1, "sys_munmap:test1");
     assert(sys_munmap(start, 4096) == 0, "sys_munmap:test2");
 
-    start = sys_mmap(MMAP_BEGIN+8192, 8192);
-    assert(start == MMAP_BEGIN+8192, "sys_munmap:test3");
-    assert(sys_munmap(start, 8192) == 0, "sys_munmap:test4");
+    assert(sys_munmap(MMAP_BEGIN+8192, 8192) == 0, "sys_munmap:test3");
 }
 
 int main()

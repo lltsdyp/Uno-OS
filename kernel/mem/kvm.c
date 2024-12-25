@@ -98,8 +98,8 @@ void vm_unmappages(pgtbl_t pgtbl, uint64 va, uint64 len, bool freeit)
     for(uint64 beg=va;beg<=end;beg+=PGSIZE)
     {
         pte_t *pte=vm_getpte(pgtbl,beg,0);
-        assert(pte!=NULL,"vm_unmappages: cannot find pte for va:%x",beg);
-        assert(*pte&PTE_V,"vm_unmappages: %x already unmapped.",beg);
+        assert(pte!=NULL,"vm_unmappages: cannot find pte for va:%p",beg);
+        assert(*pte&PTE_V,"vm_unmappages: %p already unmapped.",beg);
         assert(PTE_FLAGS(*pte)!=PTE_V,"vm_unmappages: %x is NOT a leaf page.",PTE_TO_PA(*pte));
         if(freeit)
         {

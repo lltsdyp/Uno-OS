@@ -161,7 +161,10 @@ int proc_exec(char* path, char** argv)
     // 设置新的地址空间 + trapframe + 申请mmap结构体
     p->pgtbl = pgtbl;
     p->tf = tf;
-    p->mmap = mmap_region_alloc(true);
+    p->mmap=mmap_region_alloc(false);
+    p->mmap->begin=MMAP_BEGIN;
+    p->mmap->npages=0;
+    p->mmap->next = mmap_region_alloc(true);
 
 // ------------------------- 正常返回 or 异常返回 --------------------
     vm_print(p->pgtbl);

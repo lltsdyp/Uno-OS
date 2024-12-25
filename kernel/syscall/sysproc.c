@@ -98,12 +98,32 @@ uint64 sys_brk()
 // 成功返回映射空间的起始地址, 失败返回-1
 uint64 sys_mmap()
 {
-    uint64 begin;
-    uint32 npages;
+    uint64 begin=0;
+    uint32 len;
     arg_uint64(0, &begin);
-    arg_uint32(1, &npages);
-    uvm_mmap(begin, npages/PGSIZE, PTE_U|PTE_R|PTE_W);
-    return begin;
+    arg_uint32(1, &len);
+    uint64 ret=begin;
+
+    if(len%PGSIZE!=0)
+        return -1;
+
+    mmap_region_t* node=myproc()->mmap->next;
+    if(begin==0)
+    {
+        while(1)
+        {
+            if(!node)
+                return -1;
+            if(node->npages*PGSIZE>=len){
+                ret=node->begin;
+                break;
+            }
+            node=node->next;
+        }
+    }
+
+    uvm_mmap(begin, len/PGSIZE, PTE_U|PTE_R|PTE_W);
+    return ret;
 }
 
 // 取消内存映射

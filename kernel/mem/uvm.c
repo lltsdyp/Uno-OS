@@ -170,6 +170,7 @@ void uvm_mmap(uint64 begin, uint32 npages, int perm)
             {
                 // 该情况下，将当前的region的begin字段向前移动
                 region->begin = end;
+                region->npages =next_npages;
             }
             else if (prev_npages && !next_npages)
             {
@@ -194,7 +195,6 @@ void uvm_mmap(uint64 begin, uint32 npages, int perm)
             // printf("mmap:\n");
             // uvm_show_mmaplist(myproc()->mmap);
             // vm_print(myproc()->pgtbl);
-            printf("\n");
             return;
         }
         prev_region = region;
@@ -281,7 +281,6 @@ void uvm_munmap(uint64 begin, uint32 npages)
     // printf("vm_munmap");
     // uvm_show_mmaplist(myproc()->mmap);
     // vm_print(myproc()->pgtbl);
-    printf("\n");
 }
 
 // 用户堆空间增加, 返回新的堆顶地址 (注意栈顶最大值限制)
@@ -355,7 +354,7 @@ void uvm_copyin(pgtbl_t pgtbl, uint64 dst, uint64 src, uint32 len)
         // 只会出现在最后一页上，即，该页尾部不是需要复制的内容
         else if (paddr + PGSIZE >= src + len)
         {
-            uint32 n = src & 0xfff;
+            uint32 n = src + len - srcbeg;
             memcpy((void *)dstbeg, (void *)paddr, n);
             dstbeg += n;
         }
@@ -386,7 +385,7 @@ void uvm_copyout(pgtbl_t pgtbl, uint64 dst, uint64 src, uint32 len)
         }
         else if (paddr + PGSIZE >= dst + len)
         {
-            uint32 n = dst & 0xfff;
+            uint32 n = dst + len - dstbeg;
             memcpy((void *)paddr, (void *)srcbeg, n);
             srcbeg += n;
         }
