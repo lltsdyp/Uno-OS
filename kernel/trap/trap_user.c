@@ -6,6 +6,8 @@
 #include "riscv.h"
 #include "trap/intrno.h"
 #include "syscall/syscall.h"
+#include "mem/pmem.h"
+#include "lib/str.h"
 
 // in trampoline.S
 extern char trampoline[];  // 内核和用户切换的代码
@@ -19,6 +21,60 @@ extern char kernel_vector[]; // 内核态trap处理流程
 extern char *interrupt_info[16]; // 中断错误信息
 extern char *exception_info[16]; // 异常错误信息
 
+// 判断是否为 cow page
+// 是的话返回 1，否则返回 0
+int is_cowpage(pgtbl_t pg, uint64 va) {
+    if(va >= VA_MAX) 
+        return -1;
+         
+    pte_t *pte = vm_getpte(pg, va, false);
+    if (pte == 0 || (*pte & PTE_V) == 0) 
+        return 0;
+    // 如果页表项有PTE_COW标志，则是COW页面
+    return (*pte & PTE_COW) != 0;
+}
+
+// handle_cow 处理写时复制的页面错误，分配新页面并复制数据。
+void* handle_cow(pgtbl_t pg, uint64 va) {
+    if(va % PGSIZE != 0)
+        return 0;
+
+    pte_t *pte = vm_getpte(pg, va, false);
+    assert(pte != NULL, "handle_cow: pte is NULL");
+
+    uint64 pa = PTE_TO_PA(*pte);
+    int flags = PTE_FLAGS(*pte);
+
+    // 如果只存在一个引用，则不需要分配新的物理页
+    if(pmem_get_ref(pa) == 1){
+        *pte = ((*pte) | PTE_W) & ~PTE_COW;
+        return (void*)pa;
+    }
+
+    // 存在多个引用，需要分配新的物理页
+    char* new_page = (char*)pmem_alloc(false);
+    if (new_page == 0) 
+        return 0;
+        // panic("handle_cow: failed to allocate new page");
+
+    memcpy(new_page, (char *)pa, PGSIZE);
+
+    // 清除PTE_V，否则在mappagges中会判定为remap
+    *pte &= ~PTE_V;
+
+    // 为新页面添加映射
+    // *pte = PA_TO_PTE((uint64)new_page) | ((flags | PTE_W) & (~PTE_COW));
+    vm_mappages(pg, va, (uint64)new_page, PGSIZE, (flags | PTE_W) & ~PTE_COW);
+    // if(vm_mappages(pg, va, (uint64)new_page, PGSIZE, (flags | PTE_W) & ~PTE_COW) != 0){
+    //     pmem_free((uint64)new_page);
+    //     *pte |= PTE_V;
+    //     return 0;
+    // }
+
+    pmem_free(pa, false);     // 将旧的物理页的 ref_cnt 减1
+    return (void *)new_page;
+}
+
 // 在user_vector()里面调用
 // 用户态trap处理的核心逻辑
 void trap_user_handler()
@@ -27,7 +83,7 @@ void trap_user_handler()
     uint64 sepc = r_sepc();       // 记录了发生异常时的pc值
     uint64 sstatus = r_sstatus(); // 与特权模式和中断相关的状态信息
     uint64 scause = r_scause();   // 引发trap的原因
-    // uint64 stval = r_stval();     // 发生trap时保存的附加信息(不同trap不一样)
+    uint64 stval = r_stval();     // 发生trap时保存的附加信息(不同trap不一样)
 
     proc_t *p = myproc();
     int trap_id = scause & 0xf;
@@ -50,6 +106,12 @@ void trap_user_handler()
             case SMODE_EXTERNAL_INTERRUPT:
                 external_interrupt_handler();
                 break;  
+            case UMODE_INSTRUCTION_PAGE_FAULT:
+            // stval >= p->sz???
+                if(is_cowpage(p->pgtbl, stval) != 0 ||
+                handle_cow(p->pgtbl, PGROUNDDOWN(stval)) == 0)
+                // p->killed = 1; 
+                // ????
             default:
                 panic("trap_user_handler:Unknown trap id %x,\n\tdescription:%s",trap_id,interrupt_info[trap_id]);
                 break;
