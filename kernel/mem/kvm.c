@@ -126,6 +126,8 @@ void kvm_init()
             CLINT_REGION_SIZE, PTE_R | PTE_W);
     vm_mappages(kernel_pgtbl, PLIC_BASE, PLIC_BASE,
             PLIC_REGION_SIZE, PTE_R|PTE_W);
+    vm_mappages(kernel_pgtbl, SHUTDOWN_REG,SHUTDOWN_REG,
+            PGSIZE,PTE_R|PTE_W);
 
     // kernel
     vm_mappages(kernel_pgtbl, (uint64)KERNEL_BASE, (uint64)KERNEL_BASE,

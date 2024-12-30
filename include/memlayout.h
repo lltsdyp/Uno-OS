@@ -70,4 +70,7 @@
 #define VIRTIO_IRQ   1
 #define VIRTIO_REGION_SIZE PGSIZE
 
+// 关机控制寄存器
+#define SHUTDOWN_REG    0x100000
+
 #endif

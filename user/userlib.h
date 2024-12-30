@@ -62,6 +62,8 @@ int sys_unlink(char* path);
 int sys_pid();
 int sys_ppid();
 uint64 sys_time();
+uint64 sys_reboot();
+uint64 sys_halt();
 
 // 来自user_lib.c
 

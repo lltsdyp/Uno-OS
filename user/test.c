@@ -217,6 +217,7 @@ int main()
     test_sys_brk();
     test_sys_mmap();
     test_sys_munmap();
+    sys_reboot();
 
     return 0;
 }

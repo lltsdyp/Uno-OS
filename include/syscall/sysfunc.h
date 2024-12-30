@@ -30,4 +30,8 @@ uint64 sys_chdir();
 uint64 sys_link();
 uint64 sys_unlink();
 
+// in syspower.c
+uint64 sys_reboot();
+uint64 sys_halt();
+
 #endif

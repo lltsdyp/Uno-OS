@@ -134,3 +134,13 @@ uint64 sys_time()
 {
     return syscall(SYS_time);
 }
+
+uint64 sys_reboot()
+{
+    return syscall(SYS_reboot);
+}
+
+uint64 sys_halt()
+{
+    return syscall(SYS_halt);
+}

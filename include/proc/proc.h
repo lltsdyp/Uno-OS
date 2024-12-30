@@ -141,6 +141,8 @@ void     proc_wakeup(void* sleep_space);               // 进程唤醒
 void     proc_sched();                                 // 进程切换到调度器
 void     proc_scheduler();                             // 调度器
 int      proc_exec(char* path, char** argv);           // 使用ELF文件创建一个新的进程
+void     pid_reset();                                  // 重置pid，重启时使用
+void     proc_reset();                                  // 重置PCB
 
 #endif
 // TODO!

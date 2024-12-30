@@ -32,6 +32,8 @@ static uint64 (*syscalls[])(void) = {
     [SYS_pid]           sys_pid,
     [SYS_ppid]          sys_ppid,
     [SYS_time]          sys_time,
+    [SYS_reboot]        sys_reboot,
+    [SYS_halt]          sys_halt,
 };
 
 // 系统调用

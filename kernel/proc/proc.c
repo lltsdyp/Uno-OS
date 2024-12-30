@@ -37,6 +37,26 @@ static proc_t* proczero;
 static int global_pid = 1;
 static spinlock_t lk_pid;
 
+// pid重置
+void pid_reset()
+{
+    spinlock_acquire(&lk_pid);
+    global_pid = 2;
+    spinlock_release(&lk_pid);
+}
+
+void proc_reset()
+{
+    for(int i=0;i<NPROC;++i)
+    {
+        spinlock_acquire(&procs[i].lk);
+        if(procs[i].pid!=1)
+            proc_free(&procs[i]);
+        spinlock_release(&procs[i].lk);
+    }
+    proc_make_first();
+}
+
 // 申请一个pid(锁保护)
 static int alloc_pid()
 {
@@ -228,6 +248,12 @@ void proc_free(proc_t* p)
     p->begin_running_time=0;
     p->total_exec_time=0;
     p->total_wait_time=0;
+    
+    for(int i=0;i<FILE_PER_PROC;++i)
+    {
+        if(p->filelist[i])
+        file_close(p->filelist[i]);
+    }
 
     memset((void *)&(p->ctx),0,sizeof(context_t));
 }

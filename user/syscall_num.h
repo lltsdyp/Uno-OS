@@ -25,5 +25,7 @@
 #define SYS_pid          20
 #define SYS_ppid         21
 #define SYS_time         22
+#define SYS_reboot       23
+#define SYS_halt         24
 
 #endif
