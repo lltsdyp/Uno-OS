@@ -23,6 +23,11 @@ static void copy_range(pgtbl_t old, pgtbl_t new, uint64 begin, uint64 end)
         pa = (uint64)PTE_TO_PA(*pte);
         flags = (int)PTE_FLAGS(*pte);
 
+        if(flags & PTE_W){
+            flags = (flags | PTE_COW) & ~PTE_W;
+            *pte = PA_TO_PTE(pa) | flags;
+        }
+
         page = (uint64)pmem_alloc(false); // 传入的不可能是kernel_pgtbl吧 lol
         memcpy((char *)page, (const char *)pa, PGSIZE);
         vm_mappages(new, va, page, PGSIZE, flags);

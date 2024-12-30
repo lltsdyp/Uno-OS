@@ -31,13 +31,10 @@ uint16 dir_search_entry(inode_t *pip, char *name)
     for (uint32 offset = 0; offset < BLOCK_SIZE; offset += sizeof(dirent_t))
     {
         de = (dirent_t *)(buf->data + offset);
-
         if (de->name[0] == 0) // 检测空目录项
             continue;
 
-        // 匹配目录名
-        if (strncmp(de->name, name, DIR_NAME_LEN) == 0)
-        {
+        if (strncmp(de->name, name, DIR_NAME_LEN) == 0) {
             buf_release(buf);
             return de->inode_num; // 返回匹配条目的inode_num
         }
@@ -131,25 +128,25 @@ uint16 dir_delete_entry(inode_t *pip, char *name)
     return INODE_NUM_UNUSED;
 }
 
-// 输出一个目录下的所有有效目录项
-// for debug
-// ps: 调用者需持有pip的锁
-void dir_print(inode_t *pip)
-{
-    assert(sleeplock_holding(&pip->slk), "dir_print: lock");
+// // 输出一个目录下的所有有效目录项
+// // for debug
+// // ps: 调用者需持有pip的锁
+// void dir_print(inode_t *pip)
+// {
+//     assert(sleeplock_holding(&pip->slk), "dir_print: lock");
 
-    printf("\ninode_num = %d dirents:\n", pip->inode_num);
+//     printf("\ninode_num = %d dirents:\n", pip->inode_num);
 
-    dirent_t *de;
-    buf_t *buf = buf_read(pip->disk_inode.addrs[0]);
-    for (uint32 offset = 0; offset < BLOCK_SIZE; offset += sizeof(dirent_t))
-    {
-        de = (dirent_t *)(buf->data + offset);
-        if (de->name[0] != 0)
-            printf("inum = %d dirent = %s\n", de->inode_num, de->name);
-    }
-    buf_release(buf);
-}
+//     dirent_t *de;
+//     buf_t *buf = buf_read(pip->disk_inode.addrs[0]);
+//     for (uint32 offset = 0; offset < BLOCK_SIZE; offset += sizeof(dirent_t))
+//     {
+//         de = (dirent_t *)(buf->data + offset);
+//         if (de->name[0] != 0)
+//             printf("inum = %d dirent = %s\n", de->inode_num, de->name);
+//     }
+//     buf_release(buf);
+// }
 
 /*----------------------- 路径(一串目录和文件) -------------------------*/
 

@@ -1,5 +1,5 @@
 #define __INITCODE_C__
 
-#define LAB_9_CASE_1
+#define LAB_2_CASE_1
 #include "boot/testcases.h"
 // TODO

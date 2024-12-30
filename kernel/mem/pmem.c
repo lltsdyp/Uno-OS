@@ -7,6 +7,7 @@
 typedef struct page_node
 {
     struct page_node *next; // 指向下一个物理页节点
+    uint32 ref_cnt;
 } page_node_t;
 
 // 定义可分配的物理页区域，包括内核和用户区域
@@ -24,6 +25,35 @@ static alloc_region_t kern_region, user_region;
 
 #define KERN_PAGES 1024 // 定义内核可分配空间的页数
 // pgsize = 4096 Byte
+
+void pmem_inc_ref(uint64 page)
+{
+    alloc_region_t *region = (page >= kern_region.begin && page < kern_region.end) ? &kern_region : &user_region;
+    spinlock_acquire(&region->lk);
+    page_node_t *p = (page_node_t *)page;
+    p->ref_cnt++;
+    spinlock_release(&region->lk);
+}
+
+void pmem_dec_ref(uint64 page)
+{
+    alloc_region_t *region = (page >= kern_region.begin && page < kern_region.end) ? &kern_region : &user_region;
+    spinlock_acquire(&region->lk);
+    page_node_t *p = (page_node_t *)page;
+    --p->ref_cnt;
+    spinlock_release(&region->lk);
+}
+
+int pmem_get_ref(uint64 page)
+{
+    uint32 cnt;
+    alloc_region_t *region = (page >= kern_region.begin && page < kern_region.end) ? &kern_region : &user_region;
+    spinlock_acquire(&region->lk);
+    page_node_t *p = (page_node_t *)page;
+    cnt = p->ref_cnt;
+    spinlock_release(&region->lk);
+    return cnt;
+}
 
 // 物理内存初始化函数
 void pmem_init(void)
@@ -52,18 +82,17 @@ void *pmem_alloc(bool in_kernel)
     spinlock_acquire(&region->lk);
 
     // 检查当前区域的可分配页面数量是否为0，若为0则触发panic
-    if (region->allocable == 0)
-    {
+    if (region->allocable == 0) {
         spinlock_release(&region->lk);
         panic("There is no empty page.");
     }
 
     // 获取链表头部的下一个节点，即第一个可用的物理页
     page_node_t *page = region->list_head.next;
-
     if (page != NULL){
         region->list_head.next = page->next;
         --region->allocable;
+        page->ref_cnt = 1;
         spinlock_release(&region->lk); 
         memset(page, 0, PGSIZE);
     }
@@ -84,17 +113,20 @@ void pmem_free(uint64 page, bool in_kernel)
 
     // 检查page是否在分配区域内
     if (page % PGSIZE != 0 || page < region->begin || page >= region->end)
-    {
         panic("pmem_free: Invalid page address");
-    }
 
     spinlock_acquire(&region->lk);
+
+    page_node_t *free_page = (page_node_t *)page;
+    if(--free_page->ref_cnt != 0)
+    {
+        spinlock_release(&region->lk);
+        return ;
+    }
 
     // 通过使用memset将内存区域设置为垃圾值，可以确保在释放内存后，
     // 任何尝试访问该内存的操作都会失败，从而避免悬空引用的问题。
     memset((void *)page, 1, PGSIZE);
-
-    page_node_t *free_page = (page_node_t *)page;
     free_page->next = region->list_head.next;
     region->list_head.next = free_page;
     ++region->allocable;
@@ -107,6 +139,9 @@ void free_range(uint64 begin, uint64 end, bool in_kernel)
     char *p;
     p = (char *)PGROUNDUP((uint64)begin);
     for (; p + PGSIZE <= (char *)end; p += PGSIZE){
+        // 在kfree中将会对cnt[]减1，这里要先设为1，否则就会减成负数
+        page_node_t *page = (page_node_t *)p;
+        page->ref_cnt = 1;
         pmem_free((uint64)p, in_kernel);
     }
 }
