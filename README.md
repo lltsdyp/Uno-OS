@@ -64,6 +64,7 @@ UNO-OS是一款RISCV平台的，宏内核操作系统，该内核部分参考了
 │   ├── syscall.c                   # 系统调用处理
 │   ├── sysfile.c                   # 文件相关系统调用
 │   ├── sysproc.c                   # 进程相关系统调用
+│   ├── syspower.c                  # 电源管理相关系统调用
 │   └── Makefile
 ├── trap    # 中断处理模块
 |   ├── trampoline.S                # 内核态和进程态切换的处理
@@ -123,6 +124,8 @@ int sys_unlink(char* path);                                 // 删除文件链�
 int sys_pid();                                              // 获取当前进程的pid
 int sys_ppid();                                             // 获取当前进程的父进程的pid
 uint64 sys_time();                                          // 获取当前系统时间
+uint64 sys_halt();                                          // 关机
+uint64 sys_reboot();                                        // 重启
 ```
 
 ## 开发历程
