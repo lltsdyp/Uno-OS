@@ -8,6 +8,7 @@
 #include "proc/cpu.h"
 #include "lib/print.h"
 #include "dev/console.h"
+#include "fs/pipe.h"
 
 // 设备列表(读写接口)
 dev_t devlist[N_DEV];
@@ -120,12 +121,34 @@ void file_close(file_t* file)
 {
     spinlock_acquire(&lk_ftable);
     assert(file->ref > 0, "file_read: file has already been closed");
+    
+    // 储存一些必要的字段
+    int type=file->type;
+    inode_t *ip=file->ip;
+    int writable=file->writable;
+    pipe_t *pipe=file->pipe;
+
     --(file->ref);
     if(file->ref==0)
     {
         file->type=FD_UNUSED;
     }
+    else// 只需要减少引用后解锁
+    {
+        spinlock_release(&lk_ftable);
+        return;
+    }
     spinlock_release(&lk_ftable);
+
+    if(type==FD_PIPE)
+    {
+        pipe_close(pipe, writable);
+    }
+    else
+    {
+        inode_free(ip);
+    }
+
     return;
 }
 
@@ -150,8 +173,12 @@ uint32 file_read(file_t* file, uint32 len, uint64 dst, bool user)
         break;
 
         case FD_DEVICE:
-        assert(file->major<N_DEV, "file_write: invalid device");
+        assert(file->major<N_DEV, "file_read: invalid device");
         count=devlist[file->major].read(len, dst, user);
+        break;
+
+        case FD_PIPE:
+        count=pipe_read(file->pipe, dst, len);
         break;
 
         default:
@@ -179,10 +206,16 @@ uint32 file_write(file_t* file, uint32 len, uint64 src, bool user)
             file_lseek(file, count, LSEEK_ADD);
         inode_unlock(file->ip);
         break;
+
         case FD_DEVICE:
         assert(file->major<N_DEV, "file_write: invalid device");
         count=devlist[file->major].write(len, src, user);
         break;
+
+        case FD_PIPE:
+        count=pipe_write(file->pipe, src, len);
+        break;
+
         default:
         panic("file_write: unknown or unsupported file type %d",file->type);
     }

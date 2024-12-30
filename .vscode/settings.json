@@ -48,6 +48,7 @@
         "sysfunc.h": "c",
         "user_lib.h": "c",
         "dinode.h": "c",
-        "userlib.h": "c"
+        "userlib.h": "c",
+        "file.h": "c"
     }
 }

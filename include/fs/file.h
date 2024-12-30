@@ -18,6 +18,7 @@
 #define MODE_WRITE     0x4 // 写文件
 
 typedef struct inode inode_t;
+typedef struct pipe pipe_t;
 
 typedef struct file {
     uint16 type;      // 文件类型
@@ -27,6 +28,7 @@ typedef struct file {
     uint16 major;     // 主设备号 (for device)
     uint32 offset;    // 偏移量   (for file)
     inode_t* ip;      // 对应的inode (for dir file device)
+    pipe_t* pipe;     // 如果当前不是管道文件那么这个字段是没有用的
 } file_t;
 
 typedef struct file_state {
