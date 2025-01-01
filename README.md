@@ -126,6 +126,12 @@ int sys_ppid();                                             // 获取当前进�
 uint64 sys_time();                                          // 获取当前系统时间
 uint64 sys_halt();                                          // 关机
 uint64 sys_reboot();                                        // 重启
+uint64 sys_curhide();                                       // 隐藏光标
+uint64 sys_curshow();                                       // 显示光标
+uint64 sys_backcolor(uint32 red,uint32 green,uint32 blue);  // 设置背景颜色
+uint64 sys_forecolor(uint32 red,uint32 green,uint32 blue);  // 设置前景颜色
+uint64 sys_clear();                                         // 清屏    
+uint64 sys_conreset();                                      // 重置控制台属性（颜色等）
 ```
 
 ## 开发历程

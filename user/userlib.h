@@ -64,6 +64,12 @@ int sys_ppid();
 uint64 sys_time();
 uint64 sys_reboot();
 uint64 sys_halt();
+uint64 sys_curhide();
+uint64 sys_curshow();
+uint64 sys_backcolor(uint32 red,uint32 green,uint32 blue);
+uint64 sys_forecolor(uint32 red,uint32 green,uint32 blue);
+uint64 sys_clear();
+uint64 sys_conreset();
 
 // 来自user_lib.c
 

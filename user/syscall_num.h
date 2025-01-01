@@ -27,5 +27,11 @@
 #define SYS_time         22
 #define SYS_reboot       23
 #define SYS_halt         24
+#define SYS_curhide      25
+#define SYS_curshow      26
+#define SYS_clear        27
+#define SYS_forecolor    28
+#define SYS_backcolor    29
+#define SYS_conreset     30
 
 #endif

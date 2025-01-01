@@ -34,6 +34,13 @@ static uint64 (*syscalls[])(void) = {
     [SYS_time]          sys_time,
     [SYS_reboot]        sys_reboot,
     [SYS_halt]          sys_halt,
+
+    [SYS_curhide]       sys_curhide,     
+    [SYS_curshow]       sys_curshow,
+    [SYS_backcolor]     sys_backcolor,
+    [SYS_forecolor]     sys_forecolor,
+    [SYS_clear]         sys_clear,
+    [SYS_conreset]      sys_conreset,
 };
 
 // 系统调用

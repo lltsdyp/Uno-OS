@@ -144,3 +144,33 @@ uint64 sys_halt()
 {
     return syscall(SYS_halt);
 }
+
+uint64 sys_backcolor(uint32 red,uint32 green,uint32 blue)
+{
+    return syscall(SYS_backcolor,red,green,blue);
+}
+
+uint64 sys_forecolor(uint32 red,uint32 green,uint32 blue)
+{
+    return syscall(SYS_forecolor,red,green,blue);
+}
+
+uint64 sys_curhide()
+{
+    return syscall(SYS_curhide);
+}
+
+uint64 sys_curshow()
+{
+    return syscall(SYS_curshow);
+}
+
+uint64 sys_conreset()
+{
+    return syscall(SYS_conreset);
+}
+
+uint64 sys_clear()
+{
+    return syscall(SYS_clear);
+}

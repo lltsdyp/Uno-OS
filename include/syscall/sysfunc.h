@@ -30,6 +30,14 @@ uint64 sys_chdir();
 uint64 sys_link();
 uint64 sys_unlink();
 
+// in sysconsole.c
+uint64 sys_curhide();
+uint64 sys_curshow();
+uint64 sys_backcolor();
+uint64 sys_forecolor();
+uint64 sys_clear();
+uint64 sys_conreset();
+
 // in syspower.c
 uint64 sys_reboot();
 uint64 sys_halt();

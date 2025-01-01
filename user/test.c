@@ -200,9 +200,14 @@ void test_sys_munmap() {
 
 int main()
 {
+    sys_clear();
+    sys_curhide();
+    sys_forecolor(255,255,0);
     test_sys_open();
     test_sys_close();
     test_sys_write();
+    sys_conreset();
+    sys_backcolor(0,255,0);
     test_sys_read();
     test_sys_lseek();
     test_sys_dup();
@@ -217,6 +222,7 @@ int main()
     test_sys_brk();
     test_sys_mmap();
     test_sys_munmap();
+    sys_curshow();
     sys_halt();
 
     return 0;
