@@ -146,7 +146,7 @@ uint64 sys_conreset();                                      // 重置控制台�
 |v-0.1alpha|完成boot模块并实现必要的库|[gitlab](https://gitlab.eduxiji.net/T202410269994240/project2608132-270520/-/tree/v-0.1alpha)|
 |v-0.2alpha|完成虚拟内存模块|[gitlab](https://gitlab.eduxiji.net/T202410269994240/project2608132-270520/-/tree/v-0.2alpha)|
 |v-0.3alpha|完成中断处理模块|[gitlab](https://gitlab.eduxiji.net/T202410269994240/project2608132-270520/-/tree/v-0.3alpha)|
-|v-0.4alpha|完成进程结构的设计|[gitlab](https://gitlab.eduxiji.net/T202410269994240/project2608132-270520/-/tree/v-0.4alpha)|
+|v-0.4alpha|✔️完成进程结构的设计|[gitlab](https://gitlab.eduxiji.net/T202410269994240/project2608132-270520/-/tree/v-0.4alpha)|
 |v-0.5alpha|完成进程调度模块|[gitlab](https://gitlab.eduxiji.net/T202410269994240/project2608132-270520/-/tree/v-0.5alpha)|
 |v-0.6alpha|完成磁盘底层操作接口|[gitlab](https://gitlab.eduxiji.net/T202410269994240/project2608132-270520/-/tree/v-0.6alpha)|
 |v-0.7alpha|完成文件系统模块|[gitlab](https://gitlab.eduxiji.net/T202410269994240/project2608132-270520/-/tree/v-0.7alpha)|
@@ -163,10 +163,10 @@ uint64 sys_conreset();                                      // 重置控制台�
 
 ## 预计实现的新功能
 
-- 实现UNIX下的管道机制
+- 实现UNIX下的管道机制  (✓)
 - 实现懒分配策略
-- 进行更加完备的测试
-- 实现更多系统调用
+- 进行更加完备的测试     （✓）   
+- 实现更多系统调用      （✓）
 
 上述内容详见[UNO-OS内核设计手册](./UNO-OS内核设计手册.pdf)
 

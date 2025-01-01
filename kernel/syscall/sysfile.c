@@ -264,9 +264,12 @@ uint64 sys_unlink()
 // 失败返回PIPE_ERROR
 uint64 sys_pipe()
 {
-    uint64 array=0;
+    uint64 *array=NULL;
     file_t *read,*write;
-    arg_uint64(0, array);
+
+    uint64 tmp;
+    arg_uint64(0, &tmp);
+    array=(uint64 *)tmp;
     pipe_alloc(&read,&write);
 
     int readfd=fd_alloc(read);
