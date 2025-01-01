@@ -174,3 +174,8 @@ uint64 sys_clear()
 {
     return syscall(SYS_clear);
 }
+
+uint64 sys_pipe(uint64 array)
+{
+    return syscall(SYS_pipe,array);
+}

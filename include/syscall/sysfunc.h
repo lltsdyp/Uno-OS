@@ -29,6 +29,7 @@ uint64 sys_mkdir();
 uint64 sys_chdir();
 uint64 sys_link();
 uint64 sys_unlink();
+uint64 sys_pipe();
 
 // in sysconsole.c
 uint64 sys_curhide();

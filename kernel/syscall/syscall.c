@@ -41,6 +41,7 @@ static uint64 (*syscalls[])(void) = {
     [SYS_forecolor]     sys_forecolor,
     [SYS_clear]         sys_clear,
     [SYS_conreset]      sys_conreset,
+    [SYS_pipe]          sys_pipe
 };
 
 // 系统调用

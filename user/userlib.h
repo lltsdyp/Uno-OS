@@ -70,6 +70,7 @@ uint64 sys_backcolor(uint32 red,uint32 green,uint32 blue);
 uint64 sys_forecolor(uint32 red,uint32 green,uint32 blue);
 uint64 sys_clear();
 uint64 sys_conreset();
+uint64 sys_pipe(uint64 array);
 
 // 来自user_lib.c
 

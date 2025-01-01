@@ -33,5 +33,6 @@
 #define SYS_forecolor    28
 #define SYS_backcolor    29
 #define SYS_conreset     30
+#define SYS_pipe         31
 
 #endif

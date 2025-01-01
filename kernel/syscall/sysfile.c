@@ -8,6 +8,7 @@
 #include "syscall/syscall.h"
 #include "syscall/sysfunc.h"
 #include "mem/pmem.h"
+#include "fs/pipe.h"
 
 // 获取第n个参数对应的fd和这个fd对应的file
 // 成功返回0 失败返回-1
@@ -256,4 +257,28 @@ uint64 sys_unlink()
     arg_str(0, path, DIR_PATH_LEN);
 
     return path_unlink(path);
+}
+
+// 创建管道
+// 成功返回0
+// 失败返回PIPE_ERROR
+uint64 sys_pipe()
+{
+    uint64 array=0;
+    file_t *read,*write;
+    arg_uint64(0, array);
+    pipe_alloc(&read,&write);
+
+    int readfd=fd_alloc(read);
+    int writefd=fd_alloc(write);
+    if(readfd<0||writefd<0)
+    {
+        file_close(read);
+        file_close(write);
+        return PIPE_ERROR;
+    }
+
+    uvm_copyout(myproc()->pgtbl,(uint64)&array[0],(uint64)&readfd,sizeof(readfd));
+    uvm_copyout(myproc()->pgtbl,(uint64)&array[1],(uint64)&writefd,sizeof(writefd));
+    return 0;
 }
