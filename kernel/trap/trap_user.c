@@ -75,6 +75,17 @@ void* handle_cow(pgtbl_t pg, uint64 va) {
     return (void *)new_page;
 }
 
+// 处理非cow页缺页错误，重新分配新的页
+void* handle_page_fault(pgtbl_t pg, uint64 va)
+{
+    assert (va <= VA_MAX, "handle_page_fault: the va is invalid");
+    char* new_page = (char*)pmem_alloc(false);
+    memset((void *)new_page, 0, PGSIZE);
+    va = PGROUNDDOWN(va);
+    vm_mappages(pg, va, (uint64)new_page, PGSIZE, PTE_W | PTE_U | PTE_R);
+    return (void *)new_page;
+}
+
 // 在user_vector()里面调用
 // 用户态trap处理的核心逻辑
 void trap_user_handler()
@@ -105,13 +116,7 @@ void trap_user_handler()
                 break;
             case SMODE_EXTERNAL_INTERRUPT:
                 external_interrupt_handler();
-                break;  
-            case UMODE_INSTRUCTION_PAGE_FAULT:
-            // stval >= p->sz???
-                if(is_cowpage(p->pgtbl, stval) != 0 ||
-                handle_cow(p->pgtbl, PGROUNDDOWN(stval)) == 0)
-                // p->killed = 1; 
-                // ????
+                break;
             default:
                 panic("trap_user_handler:Unhandled interruption,\n\tsepc:%p,scause:%p,sstatus:%p,stval:%p,trap_id:%d\n\tdescription:%s"
                     ,sepc,scause,sstatus,stval,trap_id,interrupt_info[trap_id]);
@@ -127,6 +132,15 @@ void trap_user_handler()
                 intr_on();
                 syscall();
                 break;
+
+            case STORE_PAGE_FAULTS:
+            case LOAD_PAGE_FAULTS:
+                if(is_cowpage(p->pgtbl, stval) != 0)
+                    handle_cow(p->pgtbl, PGROUNDDOWN(stval));
+                else 
+                    handle_page_fault(p->pgtbl, stval);
+                break;
+
             default:
                 panic("trap_user_handler:Unhandled exception,\n\tsepc:%p,scause:%p,sstatus:%p,stval:%p,trap_id:%d\n\tdescription:%s"
                     ,sepc,scause,sstatus,stval,trap_id,exception_info[trap_id]);
