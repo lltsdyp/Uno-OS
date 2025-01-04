@@ -262,3 +262,46 @@ uint64 sys_time()
 {
     return timer_get_ticks();
 }
+
+uint64 sys_sem_init()
+{
+    return (uint64)sem_alloc();
+}
+
+uint64 sys_sem_wait()
+{
+    semaphore_t *sem=NULL;
+    uint64 addr=0;
+    arg_uint64(0, &addr);
+    if(addr==0)
+        return -1;
+    sem=(semaphore_t*)addr;
+
+    sem_wait(sem);
+    return 0;
+}
+
+uint64 sys_sem_up()
+{
+    semaphore_t *sem=NULL;
+    uint64 addr=0;
+    arg_uint64(0, &addr);
+    if(addr==0)
+        return -1;
+    sem=(semaphore_t*)addr;
+
+    sem_up(sem);
+    return 0;
+}
+
+uint64 sys_sem_free()
+{
+    semaphore_t *sem=NULL;
+    uint64 addr=0;
+    arg_uint64(0, &addr);
+    if(addr==0)
+        return -1;
+    sem=(semaphore_t*)addr;
+
+    return sem_free(sem);
+}

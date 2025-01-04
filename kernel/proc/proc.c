@@ -12,6 +12,7 @@
 #include "fs/fs.h"
 #include "dev/timer.h"
 #include "fs/dir.h"
+#include "proc/semaphore.h"
 
 #define RATE_GRADIENT 8
 
@@ -26,6 +27,10 @@ extern void trap_user_return();
 
 // 内核页表
 extern pgtbl_t kernel_pgtbl;
+
+// 信号量数组
+semaphore_t semaphores[NSEM];
+spinlock_t lk_semaphores;
 
 // 进程数组
 static proc_t procs[NPROC];
@@ -580,4 +585,63 @@ void proc_wakeup(void* sleep_space)
     }
 }
 
-// TODO
+void sem_init()
+{
+    spinlock_init(&lk_semaphores,"lk_semaphores");
+    for(int i=0;i<NSEM;++i)
+    {
+        spinlock_init(&(semaphores[i].lk),"semaphore");
+        semaphores[i].valid=0;
+    }
+}
+
+void sem_wait(semaphore_t* sem)
+{
+    spinlock_acquire(&(sem->lk));
+    while (sem->value==0)
+    {
+        proc_sleep((void *)sem,&(sem->lk));
+    }
+    sem->value--;
+    
+    spinlock_release(&(sem->lk));
+}
+
+void sem_up(semaphore_t* sem)
+{
+    spinlock_acquire(&(sem->lk));
+    sem->value++;
+
+    proc_wakeup((void *)sem);
+    spinlock_release(&(sem->lk));
+}
+
+semaphore_t *sem_alloc()
+{
+    spinlock_acquire(&lk_semaphores);
+    for(int i=0;i<NSEM;++i)
+    {
+        spinlock_acquire(&(semaphores[i].lk));
+        if(semaphores[i].valid==0)
+        {
+            semaphores[i].valid=1;
+            spinlock_release(&(semaphores[i].lk));
+            return &(semaphores[i]);
+        }
+        spinlock_release(&(semaphores[i].lk));
+    }
+    spinlock_release(&lk_semaphores);
+    return NULL;
+}
+
+int sem_free(semaphore_t* sem)
+{
+    if(sem->value!=0)
+    {
+        return -1;
+    }
+    spinlock_acquire(&(sem->lk));
+    sem->valid=0;
+    spinlock_release(&(sem->lk));
+    return 0;
+}

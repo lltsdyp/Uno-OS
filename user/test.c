@@ -198,16 +198,39 @@ void test_sys_munmap() {
     assert(sys_munmap(MMAP_BEGIN+8192, 8192) == 0, "sys_munmap:test3");
 }
 
+void test_sys_pipe() {
+    int pipefd[2];
+    char buffer[15];
+    const char* message = "Hello, pipe!";
+
+
+    // 测试创建管道
+    assert(sys_pipe(pipefd) == 0, "sys_pipe:test1");
+
+    // 测试向管道写入数据
+    int bytes_written = sys_write(pipefd[1], strlen(message), (void *)message);
+    assert(bytes_written == strlen(message), "sys_pipe:test2");
+
+    // 测试从管道读取数据
+    int bytes_read = sys_read(pipefd[0], 100, (void *)buffer);
+    assert(bytes_read == strlen(message), "sys_pipe:test3");
+    assert(strncmp(buffer, message,12) == 0, "sys_pipe:test4");
+
+    // 测试关闭管道文件描述符
+    assert(sys_close(pipefd[0]) == 0, "sys_pipe:test5");
+    assert(sys_close(pipefd[1]) == 0, "sys_pipe:test6");
+}
+
 int main()
 {
     sys_clear();
     sys_curhide();
-    sys_forecolor(255,255,0);
+    // sys_forecolor(255,255,0);
     test_sys_open();
     test_sys_close();
     test_sys_write();
     sys_conreset();
-    sys_backcolor(0,255,0);
+    // sys_backcolor(0,255,0);
     test_sys_read();
     test_sys_lseek();
     test_sys_dup();
@@ -222,6 +245,7 @@ int main()
     test_sys_brk();
     test_sys_mmap();
     test_sys_munmap();
+    test_sys_pipe();
     sys_curshow();
     sys_halt();
 

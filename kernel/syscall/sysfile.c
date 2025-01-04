@@ -119,10 +119,10 @@ uint64 sys_write()
     uint64 addr;
     file_t* file;
 
-    if(arg_fd(0, NULL, &file) < 0)
-        return -1;
     arg_uint32(1, &len);
     arg_uint64(2, &addr);
+    if(arg_fd(0, NULL, &file) < 0)
+        return -1;
 
     return file_write(file, len, addr, true);
 }
@@ -264,18 +264,20 @@ uint64 sys_unlink()
 // 失败返回PIPE_ERROR
 uint64 sys_pipe()
 {
-    uint64 *array=NULL;
+    int *array=NULL;
     file_t *read,*write;
 
     uint64 tmp;
     arg_uint64(0, &tmp);
-    array=(uint64 *)tmp;
+    array=(int *)tmp;
     pipe_alloc(&read,&write);
 
     int readfd=fd_alloc(read);
     int writefd=fd_alloc(write);
     if(readfd<0||writefd<0)
     {
+        if(readfd>=0)
+            myproc()->filelist[readfd]=read;
         file_close(read);
         file_close(write);
         return PIPE_ERROR;

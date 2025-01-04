@@ -38,6 +38,7 @@ int main()
         inode_init();
         virtio_disk_init();
         proc_init();
+        sem_init();
         proc_make_first();
 
         printf("cpu %d is booting!\n", cpuid);

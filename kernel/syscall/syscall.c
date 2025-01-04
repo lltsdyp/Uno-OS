@@ -1,4 +1,4 @@
- #include "lib/print.h"
+#include "lib/print.h"
 #include "proc/cpu.h"
 #include "mem/mmap.h"
 #include "mem/vmem.h"
@@ -41,7 +41,11 @@ static uint64 (*syscalls[])(void) = {
     [SYS_forecolor]     sys_forecolor,
     [SYS_clear]         sys_clear,
     [SYS_conreset]      sys_conreset,
-    [SYS_pipe]          sys_pipe
+    [SYS_pipe]          sys_pipe,
+    [SYS_sem_init]      sys_sem_init,
+    [SYS_sem_wait]      sys_sem_wait,
+    [SYS_sem_up]        sys_sem_up,
+    [SYS_sem_free]      sys_sem_free,
 };
 
 // 系统调用

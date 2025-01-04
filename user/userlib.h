@@ -70,7 +70,11 @@ uint64 sys_backcolor(uint32 red,uint32 green,uint32 blue);
 uint64 sys_forecolor(uint32 red,uint32 green,uint32 blue);
 uint64 sys_clear();
 uint64 sys_conreset();
-uint64 sys_pipe(uint64 array);
+uint64 sys_pipe(int *array);
+uint64 sys_sem_init();
+uint64 sys_sem_wait(semaphore_t *sem);
+uint64 sys_sem_up(semaphore_t *sem);
+uint64 sys_sem_free(semaphore_t *sem);
 
 // 来自user_lib.c
 

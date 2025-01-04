@@ -10,6 +10,7 @@
 typedef uint64* pgtbl_t;
 
 typedef struct mmap_region mmap_region_t;
+typedef struct semaphore semaphore_t;
 
 #define FILE_PER_PROC  10
 
@@ -143,6 +144,12 @@ void     proc_scheduler();                             // 调度器
 int      proc_exec(char* path, char** argv);           // 使用ELF文件创建一个新的进程
 void     pid_reset();                                  // 重置pid，重启时使用
 void     proc_reset();                                  // 重置PCB
+
+void sem_init();
+void sem_wait(semaphore_t* sem);
+void sem_up(semaphore_t* sem);
+semaphore_t *sem_alloc();
+int sem_free(semaphore_t* sem);
 
 #endif
 // TODO!

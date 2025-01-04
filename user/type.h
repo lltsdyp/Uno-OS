@@ -19,6 +19,12 @@ typedef enum {false = 0, true = 1} bool;
 #define NULL ((void*)0)
 #endif
 
+typedef struct spinlock {
+    int locked;
+    char* name;
+    int cpuid;
+} spinlock_t;
+
 // 目录定义
 typedef struct dirent {
     uint16 inode_num;
@@ -32,5 +38,11 @@ typedef struct file_state {
     uint16 nlink;
     uint32 size;
 } fstat_t;
+
+typedef struct semaphore {
+    spinlock_t lk;
+    int value;
+    int valid;
+} semaphore_t;
 
 #endif

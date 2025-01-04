@@ -175,7 +175,28 @@ uint64 sys_clear()
     return syscall(SYS_clear);
 }
 
-uint64 sys_pipe(uint64 array)
+uint64 sys_pipe(int *array)
 {
     return syscall(SYS_pipe,array);
 }
+
+uint64 sys_sem_init()
+{
+    return syscall(SYS_sem_init);
+}
+
+uint64 sys_sem_wait(semaphore_t *sem)
+{
+    return syscall(SYS_sem_wait,sem);
+}
+
+uint64 sys_sem_up(semaphore_t *sem)
+{
+    return syscall(SYS_sem_up,sem);
+}
+
+uint64 sys_sem_free(semaphore_t *sem)
+{
+    return syscall(SYS_sem_free,sem);
+}
+

@@ -34,5 +34,9 @@
 #define SYS_backcolor    29
 #define SYS_conreset     30
 #define SYS_pipe         31
+#define SYS_sem_init     32
+#define SYS_sem_wait     33
+#define SYS_sem_up       34
+#define SYS_sem_free     35
 
 #endif

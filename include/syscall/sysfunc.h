@@ -30,6 +30,10 @@ uint64 sys_chdir();
 uint64 sys_link();
 uint64 sys_unlink();
 uint64 sys_pipe();
+uint64 sys_sem_init();
+uint64 sys_sem_wait();
+uint64 sys_sem_up();
+uint64 sys_sem_free();
 
 // in sysconsole.c
 uint64 sys_curhide();

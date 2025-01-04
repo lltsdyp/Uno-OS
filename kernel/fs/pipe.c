@@ -127,5 +127,5 @@ void pipe_close(pipe_t *pipe, int writable)
     {
         pmem_free((uint64)pipe,1);
     }
-    spinlock_release(&pipe->lock);
+    // spinlock_release(&pipe->lock);
 }
